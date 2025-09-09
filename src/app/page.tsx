@@ -2,6 +2,7 @@
 
 import FloatingShape from "@/components/FloatingShape";
 
+
 export default function Home() {
   return (
     <div>

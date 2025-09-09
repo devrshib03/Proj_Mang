@@ -8,9 +8,12 @@
     "start": "next start"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.542.0",
+    "mongoose": "^8.18.1",
     "next": "15.5.2",
+    "nodemailer": "^7.0.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hot-toast": "^2.6.0"
