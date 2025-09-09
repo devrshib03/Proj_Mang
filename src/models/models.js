@@ -9,6 +9,9 @@ const UserSchema = new Schema({
   name: { type: String, required: true },
   role: { type: String, enum: ['Admin', 'Manager', 'Team Member'], default: 'Team Member' },
   team: { type: Schema.Types.ObjectId, ref: 'Team' },
+  otp: { type: String },
+  otp_expires: { type: Date },
+  isVerified: { type: Boolean, default: false },
 }, { timestamps: true });
 
 // Team Schema: Defines the structure for teams or organizations.
