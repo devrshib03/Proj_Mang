@@ -34,6 +34,14 @@ export default function Page() {
         {view === 'calendar' && <CalendarView />}
         {view === 'timeline' && <TimelineView />}
       </main>
+
+    
+
+
+
+
+
     </div>
+
   );
 }
