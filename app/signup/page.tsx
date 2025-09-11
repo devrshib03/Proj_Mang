@@ -52,7 +52,7 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="flex items-center justify-center rounded-xl bg-gray-900 text-white p-4">
+    <div className="flex items-center min-h-screen justify-center rounded-xl bg-gray-900 text-white p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

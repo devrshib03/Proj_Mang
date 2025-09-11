@@ -1,32 +1,40 @@
 'use client';
+import DashboardView from 'components/DashboardView';
+import KanbanBoard from 'components/KanbanBoard';
+import Sidebar from 'components/Sidebar';
+import Tableview from 'components/Tableview';
+import ViewTabs from 'components/ViewTabs';
+import { useState } from 'react';
+import Timeline from 'components/Timeline';
+import Calendar from 'components/Calendar';
 
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const [user, setUser] = useState(null);
+type View = 'dashboard' | 'table' | 'kanban' | 'calendar' | 'timeline';
 
-  useEffect(() => {
-    // Check if the user is logged in
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    } else {
-      // If not logged in, redirect to login page
-      router.push('/login');
-    }
-  }, [router]);
-
-  if (!user) {
-    // Show a loading state or nothing while redirecting
-    return <div className="text-center text-white">Redirecting to login...</div>;
-  }
+export default function Page() {
+  const [view, setView] = useState<View>('kanban');
 
   return (
-    <div className="text-white p-8">
-      <h1 className="text-4xl font-bold">Welcome to the Dashboard, {user.name}!</h1>
-      <p className="mt-4">This is your secure dashboard.</p>
+    <div className="flex">
+      <Sidebar />
+      <main className="flex-1 overflow-x-auto p-6 relative">
+       
+
+        <div className="mb-4">
+          <h1 className="text-2xl font-semibold">Projects</h1>
+          <p className="text-sm text-brand-sub dark:text-gray-400">
+            Manage all your task in one place.
+          </p>
+          <ViewTabs view={view} setView={setView} />
+        </div>
+
+        {view === 'dashboard' && <DashboardView />}
+        {view === 'table' && <Tableview />}
+        {view === 'kanban' && <KanbanBoard />}
+        {view === 'calendar' && <Calendar />}
+        {view === 'timeline' && <Timeline />}
+      </main>
     </div>
+
   );
 }

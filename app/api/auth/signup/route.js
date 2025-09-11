@@ -1,8 +1,8 @@
 // src/app/api/auth/signup/route.js
 
 import { NextResponse } from 'next/server'; // Correct import for Next.js responses
-import dbConnect from '@/lib/mongodb';
-import { User } from '@/models/models';
+import dbConnect from '/lib/mongodb';
+import { User } from 'models/models';
 import bcrypt from 'bcryptjs';
 
 export async function POST(req) {

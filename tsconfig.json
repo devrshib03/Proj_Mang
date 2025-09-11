@@ -37,7 +37,12 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "paths": {
+     "@/*": ["./app/*"],
+      "@lib/*": ["./lib/*"],
+      "@models/*": ["./models/*"]
+    }
   },
   "include": [
     "next-env.d.ts",

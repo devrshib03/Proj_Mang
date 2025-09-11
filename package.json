@@ -18,6 +18,8 @@
 
   "dependencies": {
 
+    "bcryptjs": "^3.0.2",
+
     "classnames": "2.5.1",
 
     "clsx": "^2.1.1",
@@ -25,6 +27,8 @@
     "framer-motion": "^12.23.12",
 
     "lucide-react": "^0.543.0",
+
+    "mongoose": "^8.18.1",
 
     "next": "14.2.4",
 
