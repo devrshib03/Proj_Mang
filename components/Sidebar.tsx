@@ -6,15 +6,18 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`h-screen bg-card dark:bg-card-dark text-text dark:text-text-dark border-r border-gray-200 dark:border-gray-700 
+      className={`fixed left-0 top-0 h-screen 
+                 bg-card dark:bg-card-dark text-text dark:text-text-dark 
+                 border-r border-gray-200 dark:border-gray-700 
                  transition-all duration-300 ease-in-out 
-                 ${open ? 'w-64' : 'w-16'} flex flex-col`}
+                 ${open ? 'w-64' : 'w-16'} flex flex-col z-40`}
       style={{
         backgroundColor: 'var(--card-color)',
         color: 'var(--text-color)',
-        borderRight: '1px solid rgba(0,0,0,0.1)'
+        borderRight: '1px solid var(--border-color)',
       }}
     >
+      {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2">
           <div
@@ -25,7 +28,7 @@ export default function Sidebar() {
           >
             L
           </div>
-          {open && <span className="font-semibold text-sm"></span>}
+          {open && <span className="font-semibold text-sm">Logo</span>}
         </div>
         <button
           onClick={() => setOpen((v) => !v)}
@@ -36,6 +39,7 @@ export default function Sidebar() {
         </button>
       </div>
 
+      {/* Nav */}
       <nav className="flex-1 overflow-y-auto p-2">
         <div className="mb-4">
           {open && (

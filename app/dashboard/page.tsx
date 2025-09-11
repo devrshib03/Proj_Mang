@@ -16,7 +16,7 @@ export default function Page() {
 
   return (
     <div className="flex">
-      <Sidebar />
+      {/* <Sidebar /> */}
       <main className="flex-1 overflow-x-auto p-6 relative">
        
 
