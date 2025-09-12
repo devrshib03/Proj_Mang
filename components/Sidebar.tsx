@@ -22,7 +22,7 @@ export default function Sidebar() {
         <div className="flex items-center gap-2">
           <div
             className="h-9 w-9 rounded-lg 
-                       bg-gradient-to-tr from-purple-600 to-blue-500 
+                       bg-gradient-to-tr from-amber-500 to-orange-700 
                        flex items-center justify-center 
                        text-white font-bold"
           >
