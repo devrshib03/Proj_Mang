@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import Sidebar from "../components/Sidebar"; // <-- import your Sidebar
 import { usePathname } from "next/navigation"; // ✅ to detect route
 import { Sun, Moon } from "lucide-react";
+import { svg } from "framer-motion/client";
 export default function RootLayout({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<"light" | "dark">(
     typeof window !== "undefined" &&
