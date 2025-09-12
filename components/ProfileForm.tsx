@@ -2,172 +2,183 @@
 
 import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, Globe, Briefcase, FileText } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useUI } from '../app/contexts/UIContext'; // Corrected relative path
+import { toast } from 'react-hot-toast';
 
-// Define the shape of the user profile data
-interface UserProfile {
+// Define the shape of the form data, including optional password fields
+interface ProfileFormData {
   name: string;
   email: string;
-  country: string;
-  industry: string;
   role: string;
-  bio: string;
+  team: string;
+  currentPassword?: string;
+  newPassword?: string;
+  confirmPassword?: string;
 }
 
-// Mock data for the select dropdowns
-const mockData = {
-  countries: ['Ghana', 'USA', 'India', 'UK'],
-  industries: ['Technology', 'Finance', 'Healthcare', 'Education'],
-  roles: ['Admin', 'Manager', 'Developer'],
-};
+// Define the props that the component will accept
+interface ProfileformProps {
+  onSaveSuccess: () => void;
+}
 
-export default function ProfileForm() {
-  const [formData, setFormData] = useState<UserProfile>({
-    name: 'Codewave',
-    email: 'codewavewithasante@gmail.com',
-    country: 'Ghana',
-    industry: 'Technology',
-    role: 'Developer',
-    bio: 'Tell us about yourself...',
+export default function Profileform({ onSaveSuccess }: ProfileformProps) {
+  const { profile, updateProfile: updateProfileInContext } = useUI();
+  const [formData, setFormData] = useState<ProfileFormData>({
+    name: '', email: '', role: '', team: '',
+    currentPassword: '', newPassword: '', confirmPassword: ''
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load profile data from localStorage on initial render
+  // When the profile data from the context is loaded, populate the form
   useEffect(() => {
-    const savedProfile = localStorage.getItem('userProfile');
-    if (savedProfile) {
-      setFormData(JSON.parse(savedProfile));
+    if (profile) {
+      setFormData(prev => ({
+        ...prev,
+        name: profile.name,
+        email: profile.email,
+        role: profile.role,
+        team: profile.team,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      }));
     }
-  }, []);
+  }, [profile]);
 
-  // Save profile data to localStorage whenever the state changes
-  useEffect(() => {
-    localStorage.setItem('userProfile', JSON.stringify(formData));
-  }, [formData]);
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    toast.success('Profile updated successfully!');
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+
+    const { name, email, role, team, currentPassword, newPassword, confirmPassword } = formData;
+    
+    let anySuccess = false;
+
+    // --- 1. Update Profile Details ---
+    const profileHasChanged = name !== profile?.name || email !== profile?.email || role !== profile?.role || team !== profile?.team;
+    if (profileHasChanged) {
+        try {
+            const profileDetailsPayload = { name, email, role, team };
+            const response = await fetch('/api/profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(profileDetailsPayload),
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to update profile.');
+            }
+            
+            updateProfileInContext(data.user);
+            toast.success('Profile details updated!');
+            anySuccess = true;
+
+        } catch (error) {
+            toast.error((error as Error).message);
+        }
+    }
+
+    // --- 2. Change Password ---
+    const passwordFieldsArePartiallyFilled = currentPassword || newPassword || confirmPassword;
+    const passwordFieldsAreFullyFilled = currentPassword && newPassword && confirmPassword;
+
+    if (passwordFieldsArePartiallyFilled) {
+      if (!passwordFieldsAreFullyFilled) {
+        toast.error('Please fill all password fields to make a change.');
+      } else if (newPassword !== confirmPassword) {
+        toast.error('New passwords do not match.');
+      } else {
+          try {
+            const response = await fetch('/api/profile/change-password', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ currentPassword, newPassword }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+              throw new Error(data.message || 'Failed to change password.');
+            }
+            
+            toast.success('Password changed successfully!');
+            setFormData(prev => ({ ...prev, currentPassword: '', newPassword: '', confirmPassword: '' }));
+            anySuccess = true;
+          } catch (error) {
+             toast.error((error as Error).message);
+          }
+      }
+    }
+
+    // --- 3. Final Action: Close Modal ---
+    // If there were no changes attempted, OR if any part of the process was successful, close the modal.
+    if ((!profileHasChanged && !passwordFieldsArePartiallyFilled) || anySuccess) {
+        onSaveSuccess();
+    }
+    
+    setIsLoading(false);
   };
 
+  if (!profile) return <div>Loading...</div>;
+
   return (
-    <div className="p-4 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-            {/* Back button icon from the screenshot */}
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          <h3 className="text-xl font-bold">Profile Information</h3>
-        </div>
-        <button className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 5L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M5 12L19 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
-      </div>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-        Make changes to your profile here. Click save when you're done.
-      </p>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Full Name */}
+     <div className="p-4 space-y-6">
+       <div className="flex items-center justify-between">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Profile Information</h3>
+       </div>
+       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+         Make changes to your profile here. Click save when you're done.
+       </p>
+       <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Form Fields: Name, Email, Role, Team */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
-            <input
-              type="text"
-              name="name"
-              id="name"
-              value={formData.name}
-              onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-green-500 focus:border-green-500 text-black dark:text-white"
-            />
+            <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} className="mt-1 w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"/>
           </div>
-          {/* Email Address */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email Address</label>
-            <input
-              type="email"
-              name="email"
-              id="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-green-500 focus:border-green-500 text-black dark:text-white"
-            />
+            <input type="email" name="email" id="email" value={formData.email} onChange={handleChange} className="mt-1 w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"/>
           </div>
-          {/* Country */}
           <div>
-            <label htmlFor="country" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Country</label>
-            <select
-              name="country"
-              id="country"
-              value={formData.country}
-              onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-green-500 focus:border-green-500 text-black dark:text-white"
-            >
-              {mockData.countries.map(country => (
-                <option key={country} value={country}>{country}</option>
-              ))}
-            </select>
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Role</label>
+              <select name="role" id="role" value={formData.role} onChange={handleChange} className="mt-1 w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg">
+                  <option>Admin</option>
+                  <option>Manager</option>
+                  <option>Team Member</option>
+              </select>
           </div>
-          {/* Industry Type */}
           <div>
-            <label htmlFor="industry" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Industry Type</label>
-            <select
-              name="industry"
-              id="industry"
-              value={formData.industry}
-              onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-green-500 focus:border-green-500 text-black dark:text-white"
-            >
-              {mockData.industries.map(industry => (
-                <option key={industry} value={industry}>{industry}</option>
-              ))}
-            </select>
-          </div>
-          {/* Role in the Organization */}
-          <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Role in the Organization</label>
-            <select
-              name="role"
-              id="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-green-500 focus:border-green-500 text-black dark:text-white"
-            >
-              {mockData.roles.map(role => (
-                <option key={role} value={role}>{role}</option>
-              ))}
-            </select>
+              <label htmlFor="team" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Team</label>
+              <select name="team" id="team" value={formData.team} onChange={handleChange} className="mt-1 w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg">
+                  <option>Default Team</option>
+                  <option>Codewave</option>
+              </select>
           </div>
         </div>
-        {/* Short Bio */}
-        <div>
-          <label htmlFor="bio" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Short Bio</label>
-          <textarea
-            name="bio"
-            id="bio"
-            value={formData.bio}
-            onChange={handleChange}
-            rows={4}
-            className="mt-1 w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-green-500 focus:border-green-500 text-black dark:text-white"
-            placeholder="Tell us about yourself..."
-          />
+        
+        {/* Change Password Section */}
+        <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Change Password</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Current Password</label>
+                    <input type="password" name="currentPassword" id="currentPassword" value={formData.currentPassword} onChange={handleChange} className="mt-1 w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" />
+                </div>
+                <div>
+                    <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">New Password</label>
+                    <input type="password" name="newPassword" id="newPassword" value={formData.newPassword} onChange={handleChange} className="mt-1 w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" />
+                </div>
+                <div>
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirm Password</label>
+                    <input type="password" name="confirmPassword" id="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="mt-1 w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" />
+                </div>
+            </div>
         </div>
-        {/* Buttons */}
+
         <div className="flex justify-end mt-6">
           <motion.button
             type="submit"
@@ -179,7 +190,8 @@ export default function ProfileForm() {
             {isLoading ? 'Saving...' : 'Save Changes'}
           </motion.button>
         </div>
-      </form>
-    </div>
+       </form>
+     </div>
   );
 }
+
