@@ -45,7 +45,7 @@ export default function Sidebar() {
   };
 
   const generateRoute = (name: string): string => {
-    return `/dashboard/projects/${name
+    return `/app/dashboard/projects/${name
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9\s-]/g, "")
@@ -254,7 +254,10 @@ export default function Sidebar() {
 
             <div className="p-4 space-y-4">
               <div>
-                <label htmlFor="projectName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label
+                  htmlFor="projectName"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
                   Project Name
                 </label>
                 <input
@@ -281,7 +284,10 @@ export default function Sidebar() {
               </div>
 
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label
+                  htmlFor="description"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
                   Description
                 </label>
                 <textarea
@@ -298,7 +304,10 @@ export default function Sidebar() {
               </div>
 
               <div>
-                <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label
+                  htmlFor="dueDate"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
                   Due Date
                 </label>
                 <input
@@ -314,7 +323,10 @@ export default function Sidebar() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="priority" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label
+                    htmlFor="priority"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  >
                     Priority
                   </label>
                   <select
@@ -333,7 +345,10 @@ export default function Sidebar() {
                 </div>
 
                 <div>
-                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label
+                    htmlFor="status"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  >
                     Status
                   </label>
                   <select
