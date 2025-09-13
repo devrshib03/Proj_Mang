@@ -1,6 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Calendar, Flag, CheckCircle2, Clock, ArrowLeft, Edit3 } from "lucide-react";
+import {
+  Calendar,
+  Flag,
+  CheckCircle2,
+  Clock,
+  ArrowLeft,
+  Edit3,
+} from "lucide-react";
+import { useParams } from "next/navigation";
 
 interface Project {
   id: string;
@@ -14,63 +22,91 @@ interface Project {
 
 export default function ProjectPage() {
   // For demo purposes, using a mock slug
-  const slug = "project-alpha";
+  const { slug } = useParams();
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [formData, setFormData] = useState<Omit<Project, "id" | "route">>({
+    name: "",
+    description: "",
+    dueDate: "",
+    priority: "medium",
+    status: "planning",
+  });
+
+  // Load project from localStorage
   useEffect(() => {
-    // Simulate loading and finding project
-    setTimeout(() => {
-      // Mock project data for demonstration
-      const mockProject: Project = {
-        id: "1",
-        name: "Project Alpha",
-        description: "A comprehensive web application that revolutionizes project management with advanced analytics, real-time collaboration, and intuitive user experience design.",
-        dueDate: "2024-12-15",
-        priority: "high",
-        status: "in-progress",
-        route: "/projects/project-alpha"
-      };
-      setProject(mockProject);
-      setLoading(false);
-    }, 1000);
+    setLoading(true); // start loading
+
+    const savedProjects = localStorage.getItem("projects");
+
+    if (savedProjects) {
+      const projects: Project[] = JSON.parse(savedProjects);
+      const found = projects.find((p) => p.route.endsWith(`/${slug}`));
+
+      if (found) {
+        setProject(found);
+        setFormData({
+          name: found.name,
+          description: found.description,
+          dueDate: found.dueDate,
+          priority: found.priority,
+          status: found.status,
+        });
+      }
+    }
+
+    setLoading(false); // finish loading
   }, [slug]);
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return 'No due date set';
+    if (!dateString) return "No due date set";
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority.toLowerCase()) {
-      case 'high': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800';
+      case "high":
+        return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800";
+      case "low":
+        return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'completed': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
-      case 'in-progress': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
-      case 'pending': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800';
-      case 'on-hold': return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800';
+      case "completed":
+        return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800";
+      case "in-progress":
+        return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800";
+      case "pending":
+        return "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800";
+      case "on-hold":
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'completed': return <CheckCircle2 className="w-4 h-4" />;
-      case 'in-progress': return <Clock className="w-4 h-4" />;
-      case 'pending': return <Clock className="w-4 h-4" />;
-      default: return <Clock className="w-4 h-4" />;
+      case "completed":
+        return <CheckCircle2 className="w-4 h-4" />;
+      case "in-progress":
+        return <Clock className="w-4 h-4" />;
+      case "pending":
+        return <Clock className="w-4 h-4" />;
+      default:
+        return <Clock className="w-4 h-4" />;
     }
   };
 
@@ -131,7 +167,9 @@ export default function ProjectPage() {
             <button className="p-2 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-colors">
               <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
             </button>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Project Details</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+              Project Details
+            </h1>
           </div>
 
           {/* Main Content */}
@@ -147,7 +185,7 @@ export default function ProjectPage() {
                   </button>
                 </div>
                 <p className="text-blue-100 text-lg leading-relaxed">
-                  {project.description || 'No description provided'}
+                  {project.description || "No description provided"}
                 </p>
               </div>
             </div>
@@ -161,7 +199,9 @@ export default function ProjectPage() {
                     <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                       <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <h3 className="font-semibold text-slate-900 dark:text-white">Due Date</h3>
+                    <h3 className="font-semibold text-slate-900 dark:text-white">
+                      Due Date
+                    </h3>
                   </div>
                   <p className="text-slate-600 dark:text-slate-300 font-medium">
                     {formatDate(project.dueDate)}
@@ -174,10 +214,17 @@ export default function ProjectPage() {
                     <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
                       <Flag className="w-5 h-5 text-red-600 dark:text-red-400" />
                     </div>
-                    <h3 className="font-semibold text-slate-900 dark:text-white">Priority</h3>
+                    <h3 className="font-semibold text-slate-900 dark:text-white">
+                      Priority
+                    </h3>
                   </div>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getPriorityColor(project.priority)}`}>
-                    {project.priority.charAt(0).toUpperCase() + project.priority.slice(1)}
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getPriorityColor(
+                      project.priority
+                    )}`}
+                  >
+                    {project.priority.charAt(0).toUpperCase() +
+                      project.priority.slice(1)}
                   </span>
                 </div>
 
@@ -187,11 +234,19 @@ export default function ProjectPage() {
                     <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
                       <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
                     </div>
-                    <h3 className="font-semibold text-slate-900 dark:text-white">Status</h3>
+                    <h3 className="font-semibold text-slate-900 dark:text-white">
+                      Status
+                    </h3>
                   </div>
-                  <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(project.status)}`}>
+                  <span
+                    className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(
+                      project.status
+                    )}`}
+                  >
                     {getStatusIcon(project.status)}
-                    {project.status.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    {project.status
+                      .replace("-", " ")
+                      .replace(/\b\w/g, (l) => l.toUpperCase())}
                   </span>
                 </div>
               </div>
