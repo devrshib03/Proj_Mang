@@ -1,4 +1,5 @@
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -48,7 +49,7 @@ export default function ProjectForm() {
 
     try {
       const projectData = {
-        id: Date.now(),
+        id: Date.now(), 
         name: projectName.trim(),
         description: description.trim(),
         dueDate: dueDate,
