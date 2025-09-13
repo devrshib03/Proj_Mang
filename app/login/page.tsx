@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e:any) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
@@ -109,14 +109,14 @@ export default function LoginPage() {
               )}
             </motion.button>
           </form>
-{/* 
+
           <div className="flex items-center my-6">
             <hr className="flex-grow border-gray-600" />
             <span className="mx-3 text-gray-400 text-sm">OR</span>
             <hr className="flex-grow border-gray-600" />
-          </div> */}
+          </div>
           
-          {/* <div className="flex gap-3 mt-6">
+           <div className="flex gap-3 mt-6">
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -141,7 +141,7 @@ export default function LoginPage() {
               />
               GitHub
             </motion.button>
-          </div> */}
+          </div> 
         </div>  
         
         <div className="px-8 py-4 bg-gray-900 bg-opacity-50 flex justify-center">
