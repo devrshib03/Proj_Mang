@@ -13,9 +13,7 @@ export default function DashboardLayout({
       <Sidebar />
 
       {/* Page content */}
-      <main className="flex-1 overflow-x-auto p-6 relative">
-        {children}
-      </main>
+      <main className="flex-1 overflow-x-auto p-6 relative">{children}</main>
     </div>
   );
 }
