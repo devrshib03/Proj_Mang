@@ -49,7 +49,7 @@ export default function ProjectForm() {
 
     try {
       const projectData = {
-        id: Date.now(), // Simple ID generation for demo
+        id: Date.now(), 
         name: projectName.trim(),
         description: description.trim(),
         dueDate: dueDate,

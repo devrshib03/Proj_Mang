@@ -1,191 +1,388 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Briefcase, Users, Settings, X, Edit } from 'lucide-react';
-import { useUI } from '@/contexts/UIContext';
-import Profileform from './Profileform';
+"use client";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Folder, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-function ProfileSkeleton() {
-  return (
-    <div className="flex items-center gap-2">
-      <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 animate-pulse"></div>
-      <div className="text-left">
-        <div className="h-4 w-20 bg-gray-300 dark:bg-gray-700 rounded animate-pulse mb-1"></div>
-        <div className="h-3 w-28 bg-gray-300 dark:bg-gray-700 rounded animate-pulse"></div>
-      </div>
-    </div>
-  );
+interface Project {
+  id: string;
+  name: string;
+  description: string;
+  dueDate: string;
+  priority: string;
+  status: string;
+  route: string;
 }
 
 export default function Sidebar() {
-  const { sidebarOpen, toggleSidebar, setView, profile, loading, logout } = useUI();
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
   const router = useRouter();
+  const [open, setOpen] = useState(true);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [showDialog, setShowDialog] = useState(false);
+  const [projectName, setProjectName] = useState("");
+  const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [priority, setPriority] = useState("medium");
+  const [status, setStatus] = useState("planning");
+  const [error, setError] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!loading && !profile) {
-      router.push('/login');
+    if (showDialog && inputRef.current) {
+      inputRef.current.focus();
     }
-  }, [loading, profile, router]);
+  }, [showDialog]);
 
-  const handleLogout = async () => {
-    setProfileMenuOpen(false);
-    await logout();
+  useEffect(() => {
+    const savedProjects = localStorage.getItem("projects");
+    if (savedProjects) {
+      setProjects(JSON.parse(savedProjects));
+    }
+  }, []);
+
+  const saveProjectsToStorage = (newProjects: Project[]) => {
+    localStorage.setItem("projects", JSON.stringify(newProjects));
+    setProjects(newProjects);
   };
 
-  const handleProfileSaveSuccess = () => {
-    setIsEditProfileModalOpen(false);
+  const generateRoute = (name: string): string => {
+    return `/dashboard/projects/${name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")}`;
   };
 
-  const menuItems = [
-    { name: 'Home', view: 'dashboard', icon: <LayoutDashboard size={20} /> },
-    { name: 'My Tasks', view: 'kanban', icon: <Briefcase size={20} /> },
-    { name: 'Members', view: 'team', icon: <Users size={20} /> },
-    { name: 'Settings', view: 'settings', icon: <Settings size={20} /> },
-  ];
+  const validateProjectName = (name: string): string | null => {
+    if (!name.trim()) {
+      return "Project name cannot be empty";
+    }
+    if (name.trim().length < 2) {
+      return "Project name must be at least 2 characters";
+    }
+    if (
+      projects.some((p) => p.name.toLowerCase() === name.trim().toLowerCase())
+    ) {
+      return "Project name already exists";
+    }
+    return null;
+  };
 
-  const profileMenuItems = [
-    { name: 'Profile' },
-    { name: 'Billing', view: 'billing' },
-    { name: 'Notifications', view: 'notifications' },
-  ];
-  
-  if (loading) {
-      return (
-        <aside className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-64' : 'w-16'} flex flex-col z-40`}>
-            {/* Optional: Add a more detailed sidebar skeleton here */}
-        </aside>
-      )
-  }
+  const handleCreateProject = () => {
+    const trimmedName = projectName.trim();
+    const validationError = validateProjectName(trimmedName);
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    const newProject: Project = {
+      id: Date.now().toString(),
+      name: trimmedName,
+      description: description.trim(),
+      dueDate: dueDate,
+      priority: priority,
+      status: status,
+      route: generateRoute(trimmedName),
+    };
+
+    const updatedProjects = [...projects, newProject];
+    saveProjectsToStorage(updatedProjects);
+
+    // Reset dialog
+    setProjectName("");
+    setDescription("");
+    setDueDate("");
+    setPriority("medium");
+    setStatus("planning");
+    setError("");
+    setShowDialog(false);
+
+    console.log("Project created:", newProject);
+  };
+
+  const handleDialogClose = () => {
+    setShowDialog(false);
+    setProjectName("");
+    setDescription("");
+    setDueDate("");
+    setPriority("medium");
+    setStatus("planning");
+    setError("");
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleCreateProject();
+    } else if (e.key === "Escape") {
+      handleDialogClose();
+    }
+  };
+
+  const handleProjectClick = (project: Project) => {
+    router.push(project.route);
+  };
 
   return (
     <>
       <aside
-        className={`fixed left-0 top-0 h-screen 
-                   bg-white dark:bg-gray-800 text-gray-900 dark:text-white 
-                   border-r border-gray-200 dark:border-gray-700 
-                   transition-all duration-300 ease-in-out 
-                   ${sidebarOpen ? 'w-64' : 'w-16'} flex flex-col z-40`}
+        className={`h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border-r border-gray-200 dark:border-gray-700
+                    transition-all duration-300 ease-in-out
+                    ${open ? "w-64" : "w-16"} flex flex-col`}
       >
-        {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-2">
-                <div className="h-9 w-9 rounded-lg bg-gradient-to-tr from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-lg">
-                L
-                </div>
-                {sidebarOpen && <span className="font-semibold text-sm">Codewave</span>}
-            </div>
-            <button
-                onClick={toggleSidebar}
-                className="text-sm p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                aria-label="Toggle sidebar"
+          <div className="flex items-center gap-2">
+            <div
+              className="h-9 w-9 rounded-lg
+                          bg-gradient-to-tr from-purple-600 to-blue-500
+                          flex items-center justify-center
+                          text-white font-bold"
             >
-                {sidebarOpen ? '«' : '»'}
-            </button>
+              L
+            </div>
+            {open && <span className="font-semibold text-sm">Logo</span>}
+          </div>
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="text-sm p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            aria-label="Toggle sidebar"
+          >
+            {open ? "«" : "»"}
+          </button>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 overflow-y-auto p-2">
-            <div className="mb-4">
-                {sidebarOpen && <div className="text-xs uppercase mb-2 opacity-60">Menu</div>}
-                <ul className="space-y-1">
-                {menuItems.map((item) => (
-                    <li
-                    key={item.name}
-                    onClick={() => setView(item.view as any)}
-                    className={`px-2 py-2 rounded cursor-pointer transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${!sidebarOpen ? 'flex justify-center' : 'flex items-center gap-3'}`}
-                    >
-                    {item.icon}
-                    {sidebarOpen && item.name}
-                    </li>
-                ))}
-                </ul>
-            </div>
-        </nav>
-
-        {/* Footer / Profile */}
-        <div className="mt-auto p-2 border-t border-gray-200 dark:border-gray-700">
-            <div className="relative">
-                <button
-                    className="w-full flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                    onClick={() => setProfileMenuOpen((v) => !v)}
+          <div className="mb-4">
+            {open && (
+              <div className="text-xs uppercase mb-2 opacity-60 font-medium">
+                Menu
+              </div>
+            )}
+            <ul className="space-y-1">
+              {["Home", "My Tasks", "Members", "Settings"].map((item) => (
+                <li
+                  key={item}
+                  className={`px-3 py-2 rounded-lg cursor-pointer transition-colors 
+                             hover:bg-gray-100 dark:hover:bg-gray-800
+                             text-sm font-medium ${
+                               !open ? "flex justify-center" : ""
+                             }`}
                 >
-                    {profile ? (
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-sm font-bold text-white">
-                                {profile.name.charAt(0).toUpperCase()}
-                            </div>
-                            {sidebarOpen && (
-                                <div className="text-left">
-                                <p className="text-sm font-medium">{profile.name}</p>
-                                <p className="text-xs text-gray-500">{profile.email}</p>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <ProfileSkeleton />
-                    )}
-                </button>
-                <AnimatePresence>
-                    {profileMenuOpen && sidebarOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="absolute bottom-full mb-2 w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
-                        >
-                            <ul className="p-2 space-y-1">
-                                {profileMenuItems.map((item) => (
-                                    <li key={item.name} onClick={() => { if (item.name === 'Profile') { setIsProfileModalOpen(true); } else { setView(item.view as any); } setProfileMenuOpen(false); }} className="px-3 py-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                        {item.name}
-                                    </li>
-                                ))}
-                                <li onClick={handleLogout} className="px-3 py-2 rounded-md cursor-pointer text-red-500 hover:bg-red-500 hover:text-white dark:hover:bg-red-600 transition-colors">
-                                    Logout
-                                </li>
-                            </ul>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                  {open ? item : item[0]}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              {open && (
+                <div className="text-xs uppercase opacity-60 font-medium">
+                  Projects
+                </div>
+              )}
+              <button
+                onClick={() => setShowDialog(true)}
+                className={`p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 
+                           transition-colors text-purple-600 hover:text-purple-700 
+                           dark:text-purple-400 dark:hover:text-purple-300 ${
+                             !open ? "mx-auto" : ""
+                           }`}
+                title="Create Project"
+                aria-label="Create new project"
+              >
+                <Plus size={16} />
+              </button>
             </div>
-        </div>
+
+            {projects.length === 0 ? (
+              <div
+                className={`text-sm opacity-60 ${
+                  !open ? "hidden" : "px-3 py-2"
+                }`}
+              >
+                No projects
+              </div>
+            ) : (
+              <ul className="space-y-1">
+                {projects.map((project) => (
+                  <li
+                    key={project.id}
+                    onClick={() => handleProjectClick(project)}
+                    className={`px-3 py-2 rounded-lg cursor-pointer transition-colors 
+                               hover:bg-gray-100 dark:hover:bg-gray-800
+                               text-sm font-medium flex items-center gap-2 ${
+                                 !open ? "justify-center" : ""
+                               }`}
+                    title={
+                      !open
+                        ? `${project.name} (${project.route})`
+                        : project.route
+                    }
+                  >
+                    <Folder
+                      size={16}
+                      className="text-purple-600 dark:text-purple-400 flex-shrink-0"
+                    />
+                    {open && <span className="truncate">{project.name}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </nav>
       </aside>
 
-      {/* Modals */}
-      <AnimatePresence>
-        {isProfileModalOpen && profile && (
-            <motion.div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50" onClick={() => setIsProfileModalOpen(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <motion.div className="w-full max-w-md bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl relative flex flex-col items-center" onClick={(e) => e.stopPropagation()} initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }}>
-                    <button onClick={() => setIsProfileModalOpen(false)} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"><X size={24} /></button>
-                    <div className="w-24 h-24 mb-4 rounded-full bg-gradient-to-tr from-green-500 to-emerald-600 flex items-center justify-center text-4xl font-bold text-white">
-                        {profile.name.charAt(0).toUpperCase()}
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{profile.name}</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{profile.email}</p>
-                    <div className="w-full text-left space-y-4 mb-8">
-                        <div><label className="text-xs font-semibold text-gray-400 uppercase">Role</label><p className="text-gray-800 dark:text-gray-200">{profile.role}</p></div>
-                        <div><label className="text-xs font-semibold text-gray-400 uppercase">Team</label><p className="text-gray-800 dark:text-gray-200">{profile.team}</p></div>
-                    </div>
-                    <button onClick={() => { setIsProfileModalOpen(false); setIsEditProfileModalOpen(true); }} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 hover:bg-blue-600 rounded-lg text-white font-semibold transition-colors"><Edit size={18}/>Edit Profile</button>
-                </motion.div>
-            </motion.div>
-        )}
-      </AnimatePresence>
-      
-      <AnimatePresence>
-        {isEditProfileModalOpen && (
-          <motion.div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50" onClick={() => setIsEditProfileModalOpen(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <motion.div className="w-full max-w-2xl bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl relative" onClick={(e) => e.stopPropagation()} initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }}>
-              <button onClick={() => setIsEditProfileModalOpen(false)} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"><X size={24} /></button>
-              <Profileform onSaveSuccess={handleProfileSaveSuccess} />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Enhanced Dialog */}
+      {showDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-[500px] max-w-[90vw] mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Create New Project
+              </h3>
+              <button
+                onClick={handleDialogClose}
+                className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Close dialog"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div>
+                <label htmlFor="projectName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Project Name
+                </label>
+                <input
+                  ref={inputRef}
+                  id="projectName"
+                  type="text"
+                  value={projectName}
+                  onChange={(e) => {
+                    setProjectName(e.target.value);
+                    if (error) setError("");
+                  }}
+                  onKeyDown={handleKeyPress}
+                  placeholder="Enter project name..."
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 
+                           rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                           placeholder-gray-500 dark:placeholder-gray-400"
+                />
+                {error && (
+                  <div className="mt-2 text-sm text-red-600 dark:text-red-400">
+                    {error}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Enter project description..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 
+                           rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                           placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Due Date
+                </label>
+                <input
+                  id="dueDate"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 
+                           rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="priority" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Priority
+                  </label>
+                  <select
+                    id="priority"
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 
+                             rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent
+                             bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Status
+                  </label>
+                  <select
+                    id="status"
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 
+                             rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent
+                             bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  >
+                    <option value="planning">Planning</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="review">Review</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+              </div>
+
+              {projectName && (
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Route:{" "}
+                  <code className="bg-gray-100 dark:bg-gray-600 px-1 rounded">
+                    {generateRoute(projectName)}
+                  </code>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={handleDialogClose}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 
+                         hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateProject}
+                disabled={!projectName.trim()}
+                className="px-4 py-2 text-sm font-medium text-white bg-purple-600 
+                         hover:bg-purple-700 disabled:bg-gray-300 dark:disabled:bg-gray-600
+                         disabled:cursor-not-allowed rounded-lg transition-colors"
+              >
+                Create Project
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
-
