@@ -62,6 +62,8 @@ export default function MembersPage() {
   const [selectedMember, setSelectedMember] = useState<Member | null>(members[0]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddMember, setShowAddMember] = useState(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
   const [newMember, setNewMember] = useState({
     name: "",
     email: "",
@@ -96,6 +98,33 @@ export default function MembersPage() {
 
   const handleDeleteMember = (id: string) => {
     setMembers(members.filter((member) => member.id !== id));
+  };
+
+  const handleRemoveMember = (member: Member) => {
+    setMemberToRemove(member);
+    setShowRemoveConfirm(true);
+  };
+
+  const confirmRemoveMember = () => {
+    if (memberToRemove) {
+      // Remove the member from the list
+      const updatedMembers = members.filter((member) => member.id !== memberToRemove.id);
+      setMembers(updatedMembers);
+      
+      // If the removed member was selected, select the first available member or null
+      if (selectedMember?.id === memberToRemove.id) {
+        setSelectedMember(updatedMembers.length > 0 ? updatedMembers[0] : null);
+      }
+      
+      // Close the confirmation dialog
+      setShowRemoveConfirm(false);
+      setMemberToRemove(null);
+    }
+  };
+
+  const cancelRemoveMember = () => {
+    setShowRemoveConfirm(false);
+    setMemberToRemove(null);
   };
 
   const toggleMemberStatus = (id: string) => {
@@ -250,7 +279,10 @@ export default function MembersPage() {
                     </div>
                   </div>
                 </div>
-                <button className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                <button 
+                  onClick={() => handleRemoveMember(selectedMember)}
+                  className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                >
                   Remove User
                 </button>
               </div>
@@ -396,6 +428,64 @@ export default function MembersPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Member Confirmation Modal */}
+      {showRemoveConfirm && memberToRemove && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-[400px] max-w-[90vw] mx-4">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+                  <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Remove Member
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    This action cannot be undone
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-gray-700 dark:text-gray-300">
+                  Are you sure you want to remove <strong>{memberToRemove.name}</strong> from the workspace?
+                </p>
+                <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Mail size={14} />
+                    <span>{memberToRemove.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    {getRoleIcon(memberToRemove.role)}
+                    <span className={`px-2 py-1 text-xs rounded-full ${getRoleBadgeColor(memberToRemove.role)}`}>
+                      {memberToRemove.role}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  onClick={cancelRemoveMember}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 
+                           hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmRemoveMember}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 
+                           hover:bg-red-700 rounded-lg transition-colors"
+                >
+                  Remove Member
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
