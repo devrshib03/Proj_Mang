@@ -71,7 +71,7 @@ export default function TaskCard({ task }: { task: Task }) {
           className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium min-w-[60px] truncate ${
             task.priority
               ? priorityColors[task.priority] || "bg-gray-400 text-white"
-              : "bg-gray-200 dark:bg-gray-700 text-gray-400"
+              : "bg-gray-200 dark:bg-gray-700 text-gray-800"
           }`}
         >
           {task.priority || "No Priority"}
