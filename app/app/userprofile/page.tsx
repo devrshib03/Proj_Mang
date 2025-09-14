@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, getAllUsers, saveAllUsers, saveCurrentUser, AppUser } from '../../lib/localAuth';
+import { getCurrentUser, getAllUsers, saveAllUsers, saveCurrentUser, AppUser } from '../../../lib/localAuth';
 
 export default function UserProfilePage() {
   const router = useRouter();

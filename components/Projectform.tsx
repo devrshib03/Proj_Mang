@@ -44,12 +44,12 @@ export default function ProjectForm() {
       setError('Due date cannot be in the past');
       return;
     }
-   
+
     setIsLoading(true);
 
     try {
       const projectData = {
-        id: Date.now(), // Simple ID generation for demo
+        id: Date.now(), 
         name: projectName.trim(),
         description: description.trim(),
         dueDate: dueDate,
