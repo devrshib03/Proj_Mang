@@ -1,0 +1,50 @@
+/* === Quill Toolbar Icons (Logos) === */
+
+/* Light Mode */
+.quill-wrapper .ql-toolbar .ql-stroke {
+  stroke: #374151; /* gray-700 */
+}
+.quill-wrapper .ql-toolbar .ql-fill {
+  fill: #374151; /* gray-700 */
+}
+
+/* Dark Mode */
+.dark .quill-wrapper .ql-toolbar .ql-stroke {
+  stroke: #f9fafb; /* light text for dark background */
+}
+.dark .quill-wrapper .ql-toolbar .ql-fill {
+  fill: #f9fafb;
+}
+
+/* Hover / Active */
+.quill-wrapper .ql-toolbar button:hover .ql-stroke,
+.quill-wrapper .ql-toolbar button.ql-active .ql-stroke {
+  stroke: #2563eb; /* blue-600 */
+}
+.quill-wrapper .ql-toolbar button:hover .ql-fill,
+.quill-wrapper .ql-toolbar button.ql-active .ql-fill {
+  fill: #2563eb;
+}
+
+.dark .quill-wrapper .ql-toolbar button:hover .ql-stroke,
+.dark .quill-wrapper .ql-toolbar button.ql-active .ql-stroke {
+  stroke: #60a5fa; /* blue-400 */
+}
+.dark .quill-wrapper .ql-toolbar button:hover .ql-fill,
+.dark .quill-wrapper .ql-toolbar button.ql-active .ql-fill {
+  fill: #60a5fa;
+}
+
+/* === Placeholder Styling === */
+
+/* Light mode */
+.quill-wrapper .ql-editor.ql-blank::before {
+  color: #9ca3af !important; /* gray-400 */
+  font-style: normal;
+}
+
+/* Dark mode */
+.dark .quill-wrapper .ql-editor.ql-blank::before {
+  color: #9ca3af !important; /* softer gray so it looks balanced */
+  font-style: normal;
+}

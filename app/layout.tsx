@@ -18,7 +18,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   // Hide sidebar only on login & signup
-  const hideSidebar = pathname === "/login" || pathname === "/signup";
+  const hideSidebar = pathname === "/login" || pathname === "/signup" || pathname === "/admin" || pathname === "/";
 
   useEffect(() => {
     if (theme === "dark") {

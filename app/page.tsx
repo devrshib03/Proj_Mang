@@ -18,12 +18,8 @@ export default function Home() {
           Sign Up
         </a>
 
-        <a
-          href="/form"
-          className="px-6 py-3 bg-emerald-500 text-white font-semibold rounded-lg shadow-md hover:bg-emerald-600 transition"
-        >
-          Form
-        </a>
+       
+         
       </div>
     </div>
   );

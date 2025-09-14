@@ -1,91 +1,82 @@
-'use client'
-import { Task } from '../types'
+"use client";
+
+import { Task } from "../types";
+
+const statusColors: Record<string, string> = {
+  todo: "bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-gray-100",
+  inprogress: "bg-blue-500 text-white dark:bg-blue-600",
+  blocked: "bg-red-500 text-white dark:bg-red-600",
+  completed: "bg-green-500 text-white dark:bg-green-600",
+  inreview: "bg-yellow-500 text-white dark:bg-yellow-600",
+  backlog: "bg-purple-500 text-white dark:bg-purple-600",
+};
+
+const priorityColors: Record<string, string> = {
+  High: "bg-red-500 text-white dark:bg-red-600",
+  Medium: "bg-yellow-500 text-white dark:bg-yellow-600",
+  Low: "bg-green-500 text-white dark:bg-green-600",
+};
+
+const assigneeColors = "bg-indigo-500 text-white dark:bg-indigo-600";
 
 export default function TaskCard({ task }: { task: Task }) {
   return (
     <div
       draggable
       onDragStart={(e) => {
-        e.dataTransfer.setData('text/plain', task.id);
-        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData("text/plain", task.id);
+        e.dataTransfer.effectAllowed = "move";
       }}
-      className="rounded-2xl p-3 cursor-grab active:cursor-grabbing select-none 
-                 bg-card dark:bg-card-dark border border-border dark:border-border-dark"
-      style={{
-        backgroundColor: 'var(--card-color)',
-        color: 'var(--text-color)',
-        border: '1px solid var(--border-color)',
-      }}
+      className="bg-white dark:bg-gray-800 rounded-lg shadow px-3 py-2 cursor-grab active:cursor-grabbing hover:shadow-md flex flex-col justify-between h-auto transition w-full"
     >
-      {/* Title and Due Date */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="font-semibold text-sm truncate">{task.title}</div>
-        <div className="text-xs text-text dark:text-text-dark whitespace-nowrap">
-          {task.dueDate ?? ''}
+      {/* Top Section */}
+      <div>
+        {/* Task Title */}
+        <div className="font-medium text-sm sm:text-base text-gray-800 dark:text-gray-100 line-clamp-2">
+          {task.title || "Untitled Task"}
+        </div>
+
+        {/* Project Name */}
+        <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">
+          {task.project || "—"}
         </div>
       </div>
 
-      {/* Description */}
-      {task.description && (
-        <div
-          className="text-xs mt-2 line-clamp-2 text-text dark:text-text-dark"
-          style={{ color: 'var(--text-color)' }}
+      {/* Bottom Section: Badges */}
+      <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2">
+        {/* Assignee Badge */}
+        <span
+          className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium min-w-[60px] truncate ${
+            task.assignedTo
+              ? assigneeColors
+              : "bg-gray-200 dark:bg-gray-700 text-gray-400"
+          }`}
         >
-          {task.description}
-        </div>
-      )}
+          {task.assignedTo?.name || "Unassigned"}
+        </span>
 
-      {/* Labels and Assignees */}
-      <div className="mt-3 flex flex-wrap justify-between items-center gap-2">
-        <div className="flex flex-wrap gap-1 text-xs">
-          {task.labels?.map((l) => (
-            <span
-              key={l}
-              className="px-2 py-0.5 rounded-full bg-blue-800 text-white text-[11px]"
-            >
-              {l}
-            </span>
-          ))}
-        </div>
-        <div className="flex items-center gap-1">
-          {task.assignees?.slice(0, 3).map((a) => (
-            <div
-              key={a}
-              className="h-6 w-6 rounded-full flex items-center justify-center text-[11px]"
-              style={{
-                backgroundColor: 'var(--bg-color)',
-                color: 'var(--text-color)',
-              }}
-            >
-              {a[0]}
-            </div>
-          ))}
-        </div>
+        {/* Status Badge */}
+        <span
+          className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium min-w-[60px] truncate ${
+            task.status
+              ? statusColors[task.status] || "bg-gray-400 text-white"
+              : "bg-gray-200 dark:bg-gray-700 text-gray-400"
+          }`}
+        >
+          {task.status || "No Status"}
+        </span>
+
+        {/* Priority Badge */}
+        <span
+          className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium min-w-[60px] truncate ${
+            task.priority
+              ? priorityColors[task.priority] || "bg-gray-400 text-white"
+              : "bg-gray-200 dark:bg-gray-700 text-gray-400"
+          }`}
+        >
+          {task.priority || "No Priority"}
+        </span>
       </div>
-
-      {/* Subtasks */}
-      {task.subtasks && task.subtasks.length > 0 && (
-        <div className="mt-3 text-xs text-text dark:text-text-dark">
-          <details>
-            <summary className="cursor-pointer list-none">
-              Subtasks ({task.subtasks.filter((s) => s.done).length}/{task.subtasks.length})
-            </summary>
-            <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
-              {task.subtasks.map((s) => (
-                <div key={s.id} className="flex items-center gap-2 text-[13px]">
-                  <input type="checkbox" checked={s.done} readOnly />
-                  <div
-                    className={`truncate ${s.done ? 'line-through text-gray-500 dark:text-gray-400' : ''}`}
-                    style={{ color: 'var(--text-color)' }}
-                  >
-                    {s.title}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </details>
-        </div>
-      )}
     </div>
-  )
+  );
 }

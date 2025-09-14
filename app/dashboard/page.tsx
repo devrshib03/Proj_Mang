@@ -6,10 +6,10 @@ import Tableview from 'components/Tableview';
 import ViewTabs from 'components/ViewTabs';
 import { useState } from 'react';
 import Timeline from 'components/Timeline';
-import Calendar from 'components/Calendar';
+// import Calendar from 'components/Calendar';
 
 
-type View = 'dashboard' | 'table' | 'kanban' | 'calendar' | 'timeline';
+type View = 'dashboard' | 'table' | 'kanban' | 'timeline';
 
 export default function Page() {
   const [view, setView] = useState<View>('kanban');
@@ -31,7 +31,7 @@ export default function Page() {
         {view === 'dashboard' && <DashboardView />}
         {view === 'table' && <Tableview />}
         {view === 'kanban' && <KanbanBoard />}
-        {view === 'calendar' && <Calendar />}
+      
         {view === 'timeline' && <Timeline />}
       </main>
     </div>
