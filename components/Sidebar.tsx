@@ -163,7 +163,7 @@ export default function Sidebar() {
             <ul className="space-y-1">
               {[
                 { name: "Home", route: "/app/dashboard" },
-                { name: "My Tasks", route: "/app/dashboard" },
+                { name: "My Tasks", route: "/app/my-task" },
                 { name: "Members", route: "/app/members" },
                 { name: "Settings", route: "/app/userprofile" }
               ].map((item) => (

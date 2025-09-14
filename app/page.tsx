@@ -1,5 +1,4 @@
-import FloatingShape from "components/FloatingShape";
-import ProjectForm from "components/ProjectForm";
+
 
 export default function Home() {
   return (
@@ -19,10 +18,10 @@ export default function Home() {
         </a>
 
         <a
-          href="/form"
+          href="/app/dashboard"
           className="px-6 py-3 bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:bg-blue-800 transition"
         >
-          Form
+          dashboard
         </a>
       </div>
     </div>
