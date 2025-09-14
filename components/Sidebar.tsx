@@ -161,16 +161,22 @@ export default function Sidebar() {
               </div>
             )}
             <ul className="space-y-1">
-              {["Home", "My Tasks", "Members", "Settings"].map((item) => (
+              {[
+                { name: "Home", route: "/app/dashboard" },
+                { name: "My Tasks", route: "/app/dashboard" },
+                { name: "Members", route: "/app/members" },
+                { name: "Settings", route: "/app/userprofile" }
+              ].map((item) => (
                 <li
-                  key={item}
+                  key={item.name}
+                  onClick={() => router.push(item.route)}
                   className={`px-3 py-2 rounded-lg cursor-pointer transition-colors 
                              hover:bg-gray-100 dark:hover:bg-gray-800
                              text-sm font-medium ${
                                !open ? "flex justify-center" : ""
                              }`}
                 >
-                  {open ? item : item[0]}
+                  {open ? item.name : item.name[0]}
                 </li>
               ))}
             </ul>
