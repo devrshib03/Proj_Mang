@@ -31,7 +31,21 @@ const ProjectSchema = new Schema({
   dueDate: { type: Date },
 }, { timestamps: true });
 
+// Task Schema: Defines individual tasks assigned to users within projects.
+const TaskSchema = new Schema({
+  title: { type: String, required: true },
+  description: { type: String },
+  status: { type: String, enum: ['To Do', 'In Progress', 'Blocked', 'Done'], default: 'To Do' },
+  priority: { type: String, enum: ['Low', 'Medium', 'High', 'Urgent'], default: 'Low' },
+  dueDate: { type: Date },
+  attachmentsCount: { type: Number, default: 0 },
+  // Ownership
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  project: { type: Schema.Types.ObjectId, ref: 'Project' },
+}, { timestamps: true });
+
 // Exporting the models, or reusing them if they already exist
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);
 export const Team = mongoose.models.Team || mongoose.model('Team', TeamSchema);
 export const Project = mongoose.models.Project || mongoose.model('Project', ProjectSchema);
+export const Task = mongoose.models.Task || mongoose.model('Task', TaskSchema);
