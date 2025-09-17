@@ -21,7 +21,7 @@ export default function Column({
     <div
       className={`
         flex-1 
-        min-w-[180px] sm:min-w-[200px] 
+        min-w-[180px] sm:min-w-[190px] 
         max-w-full 
         flex flex-col 
         ${small ? "text-xs" : "text-sm"}
@@ -80,7 +80,7 @@ export default function Column({
         <div
           className="
             p-1 sm:p-2 
-            flex flex-col gap-2 flex-1 
+            flex flex-col gap-5 flex-1 
             overflow-y-auto
             scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600
           "

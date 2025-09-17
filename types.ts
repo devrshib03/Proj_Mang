@@ -26,4 +26,5 @@ export type Task = {
   attachments?: number;
   comments?: Comment[]; // <--- ensure this exists
   documentation?: string;
+   projectId?: string;
 };

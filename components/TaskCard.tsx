@@ -1,6 +1,7 @@
 "use client";
 
-import { Task } from "../types";
+import { useEffect, useState } from "react";
+import { Task, project } from "../types";
 
 const statusColors: Record<string, string> = {
   todo: "bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-gray-100",
@@ -20,6 +21,18 @@ const priorityColors: Record<string, string> = {
 const assigneeColors = "bg-indigo-500 text-white dark:bg-indigo-600";
 
 export default function TaskCard({ task }: { task: Task }) {
+  const [projectName, setProjectName] = useState<string>("—");
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("projects") || "[]") as project[];
+      const proj = stored.find((p) => p.id === task.projectId);
+      if (proj) setProjectName(proj.name);
+    } catch {
+      setProjectName("—");
+    }
+  }, [task.projectId]);
+
   return (
     <div
       draggable
@@ -38,7 +51,7 @@ export default function TaskCard({ task }: { task: Task }) {
 
         {/* Project Name */}
         <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">
-          {task.project || "—"}
+          {projectName}
         </div>
       </div>
 

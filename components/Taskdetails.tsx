@@ -4,15 +4,19 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Pencil } from "lucide-react";
-import { Task, Comment } from "../types";
-import { loadTasks, addComment as saveComment } from "../lib/storage";
+import { Task, Comment, Project } from "../types";
+import {
+  loadTasks,
+  addComment as saveComment,
+  saveTasks,
+} from "../lib/storage";
 import "react-quill/dist/quill.snow.css";
-import "styles/quill-custom.css"; // adjust path if needed
+import "styles/quill-custom.css";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
 export default function TaskDetails({ task }: { task: Task }) {
-  // normalize comments for backward compatibility
+  // 🔹 Normalize comments for backward compatibility
   const normalizeComments = (raw: any[] | undefined): Comment[] => {
     if (!raw || !Array.isArray(raw)) return [];
     return raw.map((c) =>
@@ -41,9 +45,9 @@ export default function TaskDetails({ task }: { task: Task }) {
     normalizeComments(task.comments as any)
   );
   const [newComment, setNewComment] = useState("");
-  const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [project, setProject] = useState<Project | null>(null);
 
-  // quill toolbar
+  // 🔹 Quill toolbar
   const modules = {
     toolbar: [
       ["bold", "italic", "underline", "strike"],
@@ -56,15 +60,33 @@ export default function TaskDetails({ task }: { task: Task }) {
     ],
   };
 
-  // sync tasks & comments
+  // 🔹 Sync tasks & comments
   useEffect(() => {
-    const t = loadTasks() || [];
-    setAllTasks(t);
+    // Load project metadata
+    try {
+      const storedProjects = JSON.parse(
+        localStorage.getItem("projects") || "[]"
+      );
+      const proj = storedProjects.find((p: Project) => p.id === task.projectId);
+      if (proj) setProject(proj);
+    } catch {
+      setProject(null);
+    }
 
-    const handler = () => {
-      const updated = loadTasks() || [];
-      setAllTasks(updated);
+    const handler = (e: Event) => {
+      const custom = e as CustomEvent<{ projectId?: string }>;
+      if (custom.detail?.projectId !== task.projectId) return;
 
+      const updated = loadTasks(task.projectId) || [];
+      const found = updated.find((x) => x.id === task.id);
+      if (found) {
+        setComments(normalizeComments(found.comments as any));
+        setDocContent(found.documentation ?? "");
+      }
+    };
+
+    const storageHandler = () => {
+      const updated = loadTasks(task.projectId) || [];
       const found = updated.find((x) => x.id === task.id);
       if (found) {
         setComments(normalizeComments(found.comments as any));
@@ -73,18 +95,24 @@ export default function TaskDetails({ task }: { task: Task }) {
     };
 
     window.addEventListener("tasksUpdated", handler);
-    return () => window.removeEventListener("tasksUpdated", handler);
-  }, [task.id]);
+    window.addEventListener("storage", storageHandler);
 
-  // save doc content
+    return () => {
+      window.removeEventListener("tasksUpdated", handler);
+      window.removeEventListener("storage", storageHandler);
+    };
+  }, [task.id, task.projectId]);
+
+  // 🔹 Save documentation per project
   const saveDocumentation = (content: string) => {
     setDocContent(content);
-    const stored = loadTasks() || [];
+
+    const stored = loadTasks(task.projectId) || [];
     const updatedTasks = stored.map((t) =>
       t.id === task.id ? { ...t, documentation: content } : t
     );
-    localStorage.setItem("tasks", JSON.stringify(updatedTasks));
-    window.dispatchEvent(new Event("tasksUpdated"));
+
+    saveTasks(updatedTasks, task.projectId);
   };
 
   return (
@@ -100,9 +128,16 @@ export default function TaskDetails({ task }: { task: Task }) {
                   <h2 className="text-lg sm:text-xl font-bold break-words">
                     {task.title}
                   </h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                    {task.project ?? "No Project"}
-                  </p>
+                  {project ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Project: <span className="font-medium">{project.name}</span>{" "}
+                      — {project.description || "No description"}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      No Project Linked
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-2">
@@ -181,7 +216,12 @@ export default function TaskDetails({ task }: { task: Task }) {
               />
               <button
                 onClick={() => {
-                  const comment = saveComment(task.id, "You", newComment);
+                  const comment = saveComment(
+                    task.id,
+                    "You",
+                    newComment,
+                    task.projectId
+                  );
                   if (comment) {
                     setComments([comment, ...comments]);
                     setNewComment("");

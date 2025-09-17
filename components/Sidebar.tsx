@@ -7,9 +7,6 @@ interface Project {
   id: string;
   name: string;
   description: string;
-  dueDate: string;
-  priority: string;
-  status: string;
   route: string;
 }
 
@@ -20,9 +17,6 @@ export default function Sidebar() {
   const [showDialog, setShowDialog] = useState(false);
   const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [priority, setPriority] = useState("medium");
-  const [status, setStatus] = useState("planning");
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -62,7 +56,9 @@ export default function Sidebar() {
       return "Project name must be at least 2 characters";
     }
     if (
-      projects.some((p) => p.name.toLowerCase() === name.trim().toLowerCase())
+      projects.some(
+        (p) => p?.name && p.name.toLowerCase() === name.trim().toLowerCase()
+      )
     ) {
       return "Project name already exists";
     }
@@ -82,9 +78,6 @@ export default function Sidebar() {
       id: Date.now().toString(),
       name: trimmedName,
       description: description.trim(),
-      dueDate: dueDate,
-      priority: priority,
-      status: status,
       route: generateRoute(trimmedName),
     };
 
@@ -94,9 +87,6 @@ export default function Sidebar() {
     // Reset dialog
     setProjectName("");
     setDescription("");
-    setDueDate("");
-    setPriority("medium");
-    setStatus("planning");
     setError("");
     setShowDialog(false);
 
@@ -107,9 +97,6 @@ export default function Sidebar() {
     setShowDialog(false);
     setProjectName("");
     setDescription("");
-    setDueDate("");
-    setPriority("medium");
-    setStatus("planning");
     setError("");
   };
 
@@ -172,9 +159,7 @@ export default function Sidebar() {
                   onClick={() => router.push(item.route)}
                   className={`px-3 py-2 rounded-lg cursor-pointer transition-colors 
                              hover:bg-gray-100 dark:hover:bg-gray-800
-                             text-sm font-medium ${
-                               !open ? "flex justify-center" : ""
-                             }`}
+                             text-sm font-medium ${!open ? "flex justify-center" : ""}`}
                 >
                   {open ? item.name : item.name[0]}
                 </li>
@@ -193,9 +178,7 @@ export default function Sidebar() {
                 onClick={() => setShowDialog(true)}
                 className={`p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 
                            transition-colors text-purple-600 hover:text-purple-700 
-                           dark:text-purple-400 dark:hover:text-purple-300 ${
-                             !open ? "mx-auto" : ""
-                           }`}
+                           dark:text-purple-400 dark:hover:text-purple-300 ${!open ? "mx-auto" : ""}`}
                 title="Create Project"
                 aria-label="Create new project"
               >
@@ -204,11 +187,7 @@ export default function Sidebar() {
             </div>
 
             {projects.length === 0 ? (
-              <div
-                className={`text-sm opacity-60 ${
-                  !open ? "hidden" : "px-3 py-2"
-                }`}
-              >
+              <div className={`text-sm opacity-60 ${!open ? "hidden" : "px-3 py-2"}`}>
                 No projects
               </div>
             ) : (
@@ -219,14 +198,8 @@ export default function Sidebar() {
                     onClick={() => handleProjectClick(project)}
                     className={`px-3 py-2 rounded-lg cursor-pointer transition-colors 
                                hover:bg-gray-100 dark:hover:bg-gray-800
-                               text-sm font-medium flex items-center gap-2 ${
-                                 !open ? "justify-center" : ""
-                               }`}
-                    title={
-                      !open
-                        ? `${project.name} (${project.route})`
-                        : project.route
-                    }
+                               text-sm font-medium flex items-center gap-2 ${!open ? "justify-center" : ""}`}
+                    title={!open ? `${project.name} (${project.route})` : project.route}
                   >
                     <Folder
                       size={16}
@@ -241,7 +214,7 @@ export default function Sidebar() {
         </nav>
       </aside>
 
-      {/* Enhanced Dialog */}
+      {/* Project Dialog */}
       {showDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-[500px] max-w-[90vw] mx-4 max-h-[90vh] overflow-y-auto">
@@ -307,70 +280,6 @@ export default function Sidebar() {
                            bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
                            placeholder-gray-500 dark:placeholder-gray-400 resize-none"
                 />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="dueDate"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                >
-                  Due Date
-                </label>
-                <input
-                  id="dueDate"
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 
-                           rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent
-                           bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label
-                    htmlFor="priority"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                  >
-                    Priority
-                  </label>
-                  <select
-                    id="priority"
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 
-                             rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent
-                             bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="status"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                  >
-                    Status
-                  </label>
-                  <select
-                    id="status"
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 
-                             rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent
-                             bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="planning">Planning</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="review">Review</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                </div>
               </div>
 
               {projectName && (

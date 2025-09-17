@@ -1,7 +1,6 @@
-'use client';
+"use client";
 
 import { useState, useEffect, type FormEvent, type ChangeEvent } from "react";
-import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
   PieChart,
@@ -22,10 +21,15 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
-import { loadTasks, addTask } from "../lib/storage";
-import { Task, Comment } from "../types";
+import { Task } from "../types";
+import { addTask, loadTasks } from "../lib/storage"; // ✅ use storage helpers
 
-// ✅ Form data type (UI labels)
+// ✅ Props coming from DashboardHomePage
+interface DashboardViewProps {
+  tasks?: Task[];
+  projectId?: string;
+}
+
 interface TaskFormData {
   title: string;
   assignee: string;
@@ -143,12 +147,16 @@ const PieChartWithCenterLabel = dynamic(
   { ssr: false }
 );
 
-export default function DashboardView() {
+export default function DashboardView({
+  tasks: initialTasks = [],
+  projectId,
+}: DashboardViewProps) {
   const [activeTab, setActiveTab] = useState("overview");
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
   const [formData, setFormData] = useState<TaskFormData>({
     title: "",
     assignee: "",
@@ -159,38 +167,23 @@ export default function DashboardView() {
     description: "",
   });
 
-  // ✅ Load tasks + listen for updates
-  useEffect(() => {
-    const savedTasks = loadTasks();
-    if (savedTasks) setTasks(savedTasks);
+  const storageKey = projectId ? `tasks_${projectId}` : "tasks_global";
 
-    const savedActivities = localStorage.getItem("activities");
-    const savedTimeline = localStorage.getItem("timeline");
+  // ✅ Load tasks per project
+  useEffect(() => {
+    setTasks(loadTasks(projectId));
+
+    const savedActivities = localStorage.getItem(`activities_${projectId}`);
+    const savedTimeline = localStorage.getItem(`timeline_${projectId}`);
     if (savedActivities) setActivities(JSON.parse(savedActivities));
     if (savedTimeline) setTimeline(JSON.parse(savedTimeline));
+  }, [projectId]);
 
-    const handleUpdate = () => {
-      const updatedTasks = loadTasks();
-      if (updatedTasks) setTasks(updatedTasks);
-    };
-    window.addEventListener("tasksUpdated", handleUpdate);
-    return () => window.removeEventListener("tasksUpdated", handleUpdate);
-  }, []);
-
+  // ✅ Persist when activities/timeline change
   useEffect(() => {
-    const saved = loadTasks();
-    if (saved) setTasks(saved);
-
-    const handler = () => setTasks(loadTasks() || []);
-    window.addEventListener("tasksUpdated", handler);
-    return () => window.removeEventListener("tasksUpdated", handler);
-  }, []);
-
-  // ✅ Persist activities/timeline
-  useEffect(() => {
-    localStorage.setItem("activities", JSON.stringify(activities));
-    localStorage.setItem("timeline", JSON.stringify(timeline));
-  }, [activities, timeline]);
+    localStorage.setItem(`activities_${projectId}`, JSON.stringify(activities));
+    localStorage.setItem(`timeline_${projectId}`, JSON.stringify(timeline));
+  }, [activities, timeline, projectId]);
 
   const handleChange = (
     e: ChangeEvent<
@@ -204,7 +197,6 @@ export default function DashboardView() {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
 
-    // 🔄 Normalize fields
     const statusMap: Record<string, Task["status"]> = {
       "To Do": "todo",
       "In Progress": "inprogress",
@@ -219,21 +211,26 @@ export default function DashboardView() {
       Low: "low",
     };
 
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      title: formData.title,
-      assignedTo: formData.assignee ? { name: formData.assignee } : undefined,
-      priority: priorityMap[formData.priority] || "medium",
-      createdAt: new Date().toISOString(),
-      dueDate: formData.dueDate,
-      status: statusMap[formData.status] || "todo",
-      description: formData.description,
-      attachments: 0,
-      comments: [],
-    };
+  const newTask: Task = {
+  id: crypto.randomUUID(),
+  title: formData.title,
+  assignedTo: formData.assignee ? { name: formData.assignee } : undefined,
+  priority: priorityMap[formData.priority] || "medium",
+  createdAt: new Date().toISOString(),
+  dueDate: formData.dueDate,
+  status: statusMap[formData.status] || "todo",
+  description: formData.description,
+  attachments: 0,
+  comments: [],
+  projectId: projectId || "global", // ✅ link to project
+};
 
-    addTask(newTask);
 
+    // ✅ Save using storage helper (syncs with Kanban too)
+    addTask(newTask, projectId);
+    setTasks(loadTasks(projectId));
+
+    // ✅ Track activities + timeline
     setActivities((prev) => [
       {
         id: crypto.randomUUID(),
@@ -325,7 +322,9 @@ export default function DashboardView() {
     <div className="min-h-screen p-4 sm:p-6 lg:p-8 space-y-6 bg-white text-gray-900 dark:bg-brand-bg dark:text-brand-text transition-colors">
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">FIRST PROJECT</h1>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">
+          {projectId ? ` ${projectId}` : "Dashboard"}
+        </h1>
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setIsModalOpen(true)}

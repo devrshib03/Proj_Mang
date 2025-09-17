@@ -6,7 +6,11 @@ import { loadTasks } from "../lib/storage";
 import type { Task } from "../types";
 import Link from "next/link";
 
-export default function TableView() {
+interface TableViewProps {
+  projectId?: string;
+}
+
+export default function TableView({ projectId }: TableViewProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filter, setFilter] = useState("");
   const [sortKey, setSortKey] = useState<keyof Task>("title");
@@ -15,13 +19,32 @@ export default function TableView() {
   const [page, setPage] = useState(1);
   const pageSize = 5;
 
-  // 🔹 Sync tasks
+  // 🔹 Sync tasks with localStorage (per project)
   useEffect(() => {
-    const sync = () => setTasks(loadTasks());
-    sync();
-    window.addEventListener("tasksUpdated", sync);
-    return () => window.removeEventListener("tasksUpdated", sync);
-  }, []);
+    const sync = (e?: Event) => {
+      const custom = e as CustomEvent<{ projectId?: string }> | undefined;
+
+      // If event has no detail → reload all
+      if (!custom?.detail) {
+        setTasks(loadTasks(projectId));
+        return;
+      }
+
+      // Only reload if event is for this project
+      if (custom.detail.projectId === projectId) {
+        setTasks(loadTasks(projectId));
+      }
+    };
+
+    sync(); // initial load
+    window.addEventListener("tasksUpdated", sync as EventListener);
+    window.addEventListener("storage", () => sync()); // ✅ cross-tab sync
+
+    return () => {
+      window.removeEventListener("tasksUpdated", sync as EventListener);
+      window.removeEventListener("storage", () => sync());
+    };
+  }, [projectId]);
 
   // 🔹 Filter + Sort
   const processedTasks = useMemo(() => {
@@ -150,8 +173,8 @@ export default function TableView() {
                         {task.title[0]}
                       </div>
                       <Link
-                        href={`/tasks/${task.id}`}
-                        className="font-medium text-blue-600 dark:text-blue-400"
+                        href={`/app/dashboard/projects/${projectId}/tasks/${task.id}`}
+                        className="hover:underline"
                       >
                         {task.title}
                       </Link>
@@ -169,10 +192,7 @@ export default function TableView() {
                   </td>
                   <td className="px-4 py-2">
                     {task.createdAt
-                      ? (() => {
-                          const d = new Date(task.createdAt);
-                          return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-                        })()
+                      ? new Date(task.createdAt).toLocaleDateString()
                       : "—"}
                   </td>
                   <td className="px-4 py-2">{task.dueDate || "—"}</td>
@@ -216,8 +236,7 @@ export default function TableView() {
                     onChange={() => toggleOne(task.id)}
                   />
                   <Link
-                    href={`/tasks/${task.id}`}
-                    className="font-medium text-blue-600 dark:text-blue-400"
+                    href={`/app/dashboard/projects/${projectId}/tasks/${task.id}`}
                   >
                     {task.title}
                   </Link>
