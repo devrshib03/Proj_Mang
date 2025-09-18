@@ -62,18 +62,18 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
   };
 
   // 🔹 Example: Add a new task
-  const handleAddTask = () => {
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      title: "New Task",
-      status: "todo",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      comments: [],
-    };
+  // const handleAddTask = () => {
+  //   const newTask: Task = {
+  //     id: crypto.randomUUID(),
+  //     title: "New Task",
+  //     status: "todo",
+  //     createdAt: new Date().toISOString(),
+  //     updatedAt: new Date().toISOString(),
+  //     comments: [],
+  //   };
 
-    addTask(newTask, projectId); // ✅ this saves permanently
-  };
+  //   addTask(newTask, projectId); // ✅ this saves permanently
+  // };
 
   // 🔹 Example: Delete a task
   const handleDeleteTask = (id: string) => {
@@ -84,12 +84,12 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
     <div className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6 py-4">
       {/* Action buttons for demo */}
       <div className="mb-4 flex gap-3">
-        <button
+        {/* <button
           onClick={handleAddTask}
           className="px-4 py-2 bg-blue-500 text-white rounded"
         >
           + Add Task
-        </button>
+        </button> */}
       </div>
 
       {/* Grid auto-fits columns instead of forcing horizontal scroll */}

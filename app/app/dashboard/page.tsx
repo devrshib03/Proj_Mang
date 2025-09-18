@@ -7,7 +7,7 @@ import ViewTabs from "components/ViewTabs";
 import Timeline from "components/Timeline";
 import { useState } from "react";
 
-type View = "dashboard" | "table" | "kanban" | "timeline";
+// type View = "dashboard" | "table" | "kanban" | "timeline";
 
 interface DashboardHomePageProps {
   project?: {

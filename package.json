@@ -28,6 +28,8 @@
 
     "framer-motion": "^12.23.12",
 
+    "js-cookie": "^3.0.5",
+
     "jsonwebtoken": "^9.0.2",
 
     "lucide-react": "^0.543.0",
