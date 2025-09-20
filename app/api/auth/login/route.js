@@ -3,7 +3,7 @@ import dbConnect from '/lib/mongodb';
 import { User } from 'models/models';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { serialize } from 'cookie';
+import { cookies } from 'next/headers';
 
 // This is the lifetime of the login session token
 const TOKEN_MAX_AGE = 60 * 60; // 1 hour in seconds
@@ -39,23 +39,28 @@ export async function POST(req) {
       expiresIn: TOKEN_MAX_AGE,
     });
 
-    // 2. Serialize the token into a secure, http-only cookie
-    const serializedCookie = serialize('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV !== 'development',
-      sameSite: 'strict',
-      maxAge: TOKEN_MAX_AGE,
-      path: '/',
-    });
+    // 2. Prepare the response
+   const response = NextResponse.json({ 
+  success: true, 
+  message: 'Logged in successfully.',
+  user: { 
+    id: user._id, 
+    name: user.name, 
+    email: user.email, 
+    token // ✅ include token so frontend can save it
+  } 
+});
 
-    // 3. Send the response with the cookie in the headers
-    const response = NextResponse.json({ 
-        success: true, 
-        message: 'Logged in successfully.',
-        user: { id: user._id, name: user.name, email: user.email } 
+    // 3. Set the cookie using Next.js built-in cookies API (more reliable)
+    response.cookies.set({
+      name: 'token',
+      value: token,
+      httpOnly: true,
+      secure: false, // OK for localhost; switch to true in production
+      sameSite: 'lax',
+      path: '/',
+      maxAge: TOKEN_MAX_AGE,
     });
-    
-    response.headers.set('Set-Cookie', serializedCookie);
 
     return response;
 

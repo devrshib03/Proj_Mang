@@ -4,12 +4,10 @@ import { Plus, Folder, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Project {
-  id: string;
+  _id?: string; // MongoDB _id
+  id: string;   // React key
   name: string;
   description: string;
-  dueDate: string;
-  priority: string;
-  status: string;
   route: string;
 }
 
@@ -20,10 +18,8 @@ export default function Sidebar() {
   const [showDialog, setShowDialog] = useState(false);
   const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [priority, setPriority] = useState("medium");
-  const [status, setStatus] = useState("planning");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -32,17 +28,31 @@ export default function Sidebar() {
     }
   }, [showDialog]);
 
+  // 🔹 Load projects from MongoDB
   useEffect(() => {
-    const savedProjects = localStorage.getItem("projects");
-    if (savedProjects) {
-      setProjects(JSON.parse(savedProjects));
-    }
-  }, []);
+    async function fetchProjects() {
+      try {
+        const res = await fetch("/api/projects", { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to load projects");
 
-  const saveProjectsToStorage = (newProjects: Project[]) => {
-    localStorage.setItem("projects", JSON.stringify(newProjects));
-    setProjects(newProjects);
-  };
+        const json = await res.json();
+        if (json?.data) {
+          const normalized = json.data.map((p: any) => ({
+            id: p._id?.toString() ?? Date.now().toString(),
+            name: p.name,
+            description: p.description || "",
+            route: p.route || generateRoute(p.name), // ✅ fallback if missing
+          }));
+          setProjects(normalized);
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch projects:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProjects();
+  }, []);
 
   const generateRoute = (name: string): string => {
     return `/app/dashboard/projects/${name
@@ -55,21 +65,20 @@ export default function Sidebar() {
   };
 
   const validateProjectName = (name: string): string | null => {
-    if (!name.trim()) {
-      return "Project name cannot be empty";
-    }
-    if (name.trim().length < 2) {
+    if (!name.trim()) return "Project name cannot be empty";
+    if (name.trim().length < 2)
       return "Project name must be at least 2 characters";
-    }
     if (
-      projects.some((p) => p.name.toLowerCase() === name.trim().toLowerCase())
-    ) {
+      projects.some(
+        (p) => p?.name && p.name.toLowerCase() === name.trim().toLowerCase()
+      )
+    )
       return "Project name already exists";
-    }
     return null;
   };
 
-  const handleCreateProject = () => {
+  // 🔹 Create project in MongoDB
+  const handleCreateProject = async () => {
     const trimmedName = projectName.trim();
     const validationError = validateProjectName(trimmedName);
 
@@ -82,34 +91,53 @@ export default function Sidebar() {
       id: Date.now().toString(),
       name: trimmedName,
       description: description.trim(),
-      dueDate: dueDate,
-      priority: priority,
-      status: status,
       route: generateRoute(trimmedName),
     };
 
-    const updatedProjects = [...projects, newProject];
-    saveProjectsToStorage(updatedProjects);
+    try {
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newProject),
+      });
 
-    // Reset dialog
-    setProjectName("");
-    setDescription("");
-    setDueDate("");
-    setPriority("medium");
-    setStatus("planning");
-    setError("");
-    setShowDialog(false);
+      const json = await res.json();
 
-    console.log("Project created:", newProject);
+      if (!res.ok) {
+        console.error("❌ Server error:", json);
+        setError(json.message || "Failed to save project");
+        return;
+      }
+
+      const savedProject = json?.data;
+
+      if (savedProject) {
+        setProjects((prev) => [
+          ...prev,
+          {
+            id: savedProject._id?.toString() ?? Date.now().toString(),
+            name: savedProject.name,
+            description: savedProject.description,
+            route: savedProject.route || generateRoute(savedProject.name),
+          },
+        ]);
+      }
+
+      // Reset dialog
+      setProjectName("");
+      setDescription("");
+      setError("");
+      setShowDialog(false);
+    } catch (err) {
+      console.error("❌ Network error:", err);
+      setError("Failed to reach server. Try again.");
+    }
   };
 
   const handleDialogClose = () => {
     setShowDialog(false);
     setProjectName("");
     setDescription("");
-    setDueDate("");
-    setPriority("medium");
-    setStatus("planning");
     setError("");
   };
 
@@ -165,16 +193,14 @@ export default function Sidebar() {
                 { name: "Home", route: "/app/dashboard" },
                 { name: "My Tasks", route: "/app/my-task" },
                 { name: "Members", route: "/app/members" },
-                { name: "Settings", route: "/app/userprofile" }
+                { name: "Settings", route: "/app/userprofile" },
               ].map((item) => (
                 <li
                   key={item.name}
                   onClick={() => router.push(item.route)}
                   className={`px-3 py-2 rounded-lg cursor-pointer transition-colors 
                              hover:bg-gray-100 dark:hover:bg-gray-800
-                             text-sm font-medium ${
-                               !open ? "flex justify-center" : ""
-                             }`}
+                             text-sm font-medium ${!open ? "flex justify-center" : ""}`}
                 >
                   {open ? item.name : item.name[0]}
                 </li>
@@ -193,9 +219,7 @@ export default function Sidebar() {
                 onClick={() => setShowDialog(true)}
                 className={`p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 
                            transition-colors text-purple-600 hover:text-purple-700 
-                           dark:text-purple-400 dark:hover:text-purple-300 ${
-                             !open ? "mx-auto" : ""
-                           }`}
+                           dark:text-purple-400 dark:hover:text-purple-300 ${!open ? "mx-auto" : ""}`}
                 title="Create Project"
                 aria-label="Create new project"
               >
@@ -203,11 +227,11 @@ export default function Sidebar() {
               </button>
             </div>
 
-            {projects.length === 0 ? (
+            {loading ? (
+              <div className="text-sm opacity-60 px-3 py-2">Loading...</div>
+            ) : projects.length === 0 ? (
               <div
-                className={`text-sm opacity-60 ${
-                  !open ? "hidden" : "px-3 py-2"
-                }`}
+                className={`text-sm opacity-60 ${!open ? "hidden" : "px-3 py-2"}`}
               >
                 No projects
               </div>
@@ -219,14 +243,8 @@ export default function Sidebar() {
                     onClick={() => handleProjectClick(project)}
                     className={`px-3 py-2 rounded-lg cursor-pointer transition-colors 
                                hover:bg-gray-100 dark:hover:bg-gray-800
-                               text-sm font-medium flex items-center gap-2 ${
-                                 !open ? "justify-center" : ""
-                               }`}
-                    title={
-                      !open
-                        ? `${project.name} (${project.route})`
-                        : project.route
-                    }
+                               text-sm font-medium flex items-center gap-2 ${!open ? "justify-center" : ""}`}
+                    title={!open ? `${project.name} (${project.route})` : project.route}
                   >
                     <Folder
                       size={16}
@@ -241,7 +259,7 @@ export default function Sidebar() {
         </nav>
       </aside>
 
-      {/* Enhanced Dialog */}
+      {/* Project Dialog */}
       {showDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-[500px] max-w-[90vw] mx-4 max-h-[90vh] overflow-y-auto">
@@ -307,70 +325,6 @@ export default function Sidebar() {
                            bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
                            placeholder-gray-500 dark:placeholder-gray-400 resize-none"
                 />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="dueDate"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                >
-                  Due Date
-                </label>
-                <input
-                  id="dueDate"
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 
-                           rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent
-                           bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label
-                    htmlFor="priority"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                  >
-                    Priority
-                  </label>
-                  <select
-                    id="priority"
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 
-                             rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent
-                             bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="status"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                  >
-                    Status
-                  </label>
-                  <select
-                    id="status"
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 
-                             rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent
-                             bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="planning">Planning</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="review">Review</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                </div>
               </div>
 
               {projectName && (

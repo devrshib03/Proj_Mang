@@ -1,29 +1,28 @@
+import BenefitsSection from "components/BenefitsSection";
+import CTASection from "components/CTASection";
+import DemoSection from "components/DemoSection";
+import Features from "components/Features";
+import Footer from "components/Footer";
+import Header from "components/Header";
+import Hero from "components/Hero";
+import HowItWorks from "components/HowItWorks";
+import PricingSection from "components/PricingSection";
+import TestimonialsSection from "components/TestimonialsSection";
 
 
 export default function Home() {
   return (
-    <div className="flex justify-center items-center text-center min-h-screen p-4">
-      <div className="mt-6 flex gap-4 flex-wrap ">
-        <a
-          href="/login"
-          className="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 transition"
-        >
-          Login
-        </a>
-        <a
-          href="/signup"
-          className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition"
-        >
-          Sign Up
-        </a>
-
-        <a
-          href="/app/dashboard"
-          className="px-6 py-3 bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:bg-blue-800 transition"
-        >
-          dashboard
-        </a>
-      </div>
-    </div>
+        <main className="min-h-screen flex flex-col">
+            <Header />
+            <Hero />
+            <Features />
+            <HowItWorks />
+            <DemoSection />
+            <BenefitsSection />
+            <PricingSection />
+            <TestimonialsSection />
+            <CTASection />
+            <Footer />
+          </main>
   );
 }

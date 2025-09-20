@@ -1,7 +1,7 @@
 'use client';
 import { Dispatch, SetStateAction } from 'react';
 
-type View = 'dashboard' | 'table' | 'kanban' | 'calendar' | 'timeline';
+type View = 'dashboard' | 'table' | 'kanban' | 'timeline';
 
 export default function ViewTabs({
   view,
@@ -14,7 +14,7 @@ export default function ViewTabs({
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'table', label: 'Table' },
     { id: 'kanban', label: 'Kanban' },
-    { id: 'calendar', label: 'Calendar' },
+   
     { id: 'timeline', label: 'Timeline' },
   ];
 

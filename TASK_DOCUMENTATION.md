@@ -14,6 +14,7 @@
   - Role-based access levels
   - Search and filtering
   - Add/remove member capabilities
+  - Remove user functionality with confirmation dialog
 
 ## 🛠️ Technical Implementation
 
@@ -59,7 +60,60 @@ const formatDate = (dateString: string) => {
 **Error**: `'ProjectForm' is declared but its value is never read`
 **Solution**: Removed unused import from `app/page.tsx`
 
-### 3. UI/UX Design Decisions
+### 3. Remove User Functionality Implementation
+
+#### Problem: Need Safe Member Removal
+**Challenge**: Implement destructive action (member removal) with proper user confirmation
+**Requirements**:
+- Confirmation dialog to prevent accidental deletions
+- Visual feedback for destructive actions
+- Smart state management after removal
+- Professional UI/UX for sensitive operations
+
+#### Solution: Confirmation Modal Pattern
+```typescript
+// State management for removal process
+const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
+
+// Remove member handler
+const handleRemoveMember = (member: Member) => {
+  setMemberToRemove(member);
+  setShowRemoveConfirm(true);
+};
+
+// Confirmation logic
+const confirmRemoveMember = () => {
+  if (memberToRemove) {
+    const updatedMembers = members.filter((member) => member.id !== memberToRemove.id);
+    setMembers(updatedMembers);
+    
+    // Smart selection after removal
+    if (selectedMember?.id === memberToRemove.id) {
+      setSelectedMember(updatedMembers.length > 0 ? updatedMembers[0] : null);
+    }
+    
+    setShowRemoveConfirm(false);
+    setMemberToRemove(null);
+  }
+};
+```
+
+#### UI/UX Design for Remove Functionality
+- **Warning Icon**: Red trash icon to indicate destructive action
+- **Member Preview**: Shows exactly who is being removed
+- **Clear Messaging**: "This action cannot be undone" warning
+- **Action Buttons**: Cancel (gray) and Remove (red) with clear hierarchy
+- **Member Details**: Email and role display in confirmation dialog
+
+#### Key Implementation Details
+1. **State Management**: Separate state for confirmation dialog and member to remove
+2. **Smart Selection**: Automatically selects next available member after removal
+3. **Safety First**: Confirmation required for all removal actions
+4. **Visual Feedback**: Red color scheme indicates destructive nature
+5. **Accessibility**: Clear button labels and keyboard navigation support
+
+### 4. UI/UX Design Decisions
 
 #### Layout Structure
 - **Left Panel (50%)**: Member list with search and selection
@@ -116,6 +170,14 @@ const [showAddMember, setShowAddMember] = useState(false);
 - Role selection dropdown
 - Responsive design
 
+### 4. Remove User Functionality
+- **Confirmation Dialog**: Professional modal with warning icon
+- **Member Preview**: Shows member details before removal
+- **Safety Features**: "Cannot be undone" warning message
+- **Smart State Management**: Auto-selects next member after removal
+- **Visual Design**: Red color scheme for destructive actions
+- **Accessibility**: Clear button labels and keyboard support
+
 ## 🐛 Problems Encountered & Solutions
 
 | Problem | Root Cause | Solution | Prevention |
@@ -123,6 +185,8 @@ const [showAddMember, setShowAddMember] = useState(false);
 | Hydration Error | Date formatting inconsistency | Explicit locale specification | Always use consistent formatting functions |
 | Unused Import | Dead code | Remove unused imports | Regular code cleanup |
 | Navigation Not Working | Missing onClick handlers | Added router.push() calls | Test navigation after UI changes |
+| Destructive Action Safety | Need to prevent accidental deletions | Confirmation modal pattern | Always implement confirmation for destructive actions |
+| State Management After Removal | Need to handle selection after member removal | Smart selection logic | Plan state updates for all CRUD operations |
 
 ## 📊 Code Quality Metrics
 
@@ -204,6 +268,9 @@ const [showAddMember, setShowAddMember] = useState(false);
 - ✅ Role system with visual indicators
 - ✅ Search functionality
 - ✅ Add/remove member capabilities
+- ✅ Remove user functionality with confirmation dialog
+- ✅ Smart state management after member removal
+- ✅ Professional UI/UX for destructive actions
 - ✅ Responsive design
 - ✅ Dark mode support
 - ✅ No console errors
@@ -230,6 +297,56 @@ const [showAddMember, setShowAddMember] = useState(false);
 3. **Document Problems**: Record solutions for future reference
 4. **Follow Patterns**: Use existing code patterns for consistency
 5. **User Experience**: Prioritize intuitive interactions
+6. **Safety First**: Always implement confirmation for destructive actions
+7. **State Management**: Plan for all possible state changes in CRUD operations
+8. **Visual Design**: Use color and icons to communicate action severity
+
+## 🔧 Remove Functionality Implementation Pattern
+
+### **Confirmation Modal Pattern**
+This pattern can be reused for any destructive action:
+
+```typescript
+// 1. State for confirmation dialog
+const [showConfirm, setShowConfirm] = useState(false);
+const [itemToDelete, setItemToDelete] = useState<Item | null>(null);
+
+// 2. Trigger confirmation
+const handleDelete = (item: Item) => {
+  setItemToDelete(item);
+  setShowConfirm(true);
+};
+
+// 3. Confirm action
+const confirmDelete = () => {
+  if (itemToDelete) {
+    // Perform deletion
+    setItems(items.filter(item => item.id !== itemToDelete.id));
+    
+    // Handle related state updates
+    if (selectedItem?.id === itemToDelete.id) {
+      setSelectedItem(updatedItems.length > 0 ? updatedItems[0] : null);
+    }
+    
+    // Clean up
+    setShowConfirm(false);
+    setItemToDelete(null);
+  }
+};
+
+// 4. Cancel action
+const cancelDelete = () => {
+  setShowConfirm(false);
+  setItemToDelete(null);
+};
+```
+
+### **UI Design Principles for Destructive Actions**
+- **Warning Colors**: Red for destructive actions
+- **Clear Messaging**: "This action cannot be undone"
+- **Item Preview**: Show what's being deleted
+- **Button Hierarchy**: Cancel (secondary) vs Delete (primary destructive)
+- **Icon Usage**: Warning/trash icons for visual clarity
 
 ---
 
