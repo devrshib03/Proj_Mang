@@ -1,49 +1,17 @@
-// components/TaskDetails.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Pencil } from "lucide-react";
 import { Task, Comment, Project } from "../types";
-import {
-  loadTasks,
-  addComment as saveComment,
-  saveTasks,
-} from "../lib/storage";
 import "react-quill/dist/quill.snow.css";
 import "styles/quill-custom.css";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
 export default function TaskDetails({ task }: { task: Task }) {
-  // 🔹 Normalize comments for backward compatibility
-  const normalizeComments = (raw: any[] | undefined): Comment[] => {
-    if (!raw || !Array.isArray(raw)) return [];
-    return raw.map((c) =>
-      typeof c === "string"
-        ? {
-            id: Date.now().toString() + Math.random().toString(36).slice(2),
-            text: c,
-            author: "Unknown",
-            createdAt: new Date().toISOString(),
-            taskId: task?.id,
-          }
-        : {
-            id:
-              (c.id as string) ||
-              Date.now().toString() + Math.random().toString(36).slice(2),
-            text: c.text ?? "",
-            author: c.author ?? "Unknown",
-            createdAt: c.createdAt ?? new Date().toISOString(),
-            taskId: c.taskId ?? task?.id,
-          }
-    );
-  };
-
-  const [docContent, setDocContent] = useState(task.documentation ?? "");
-  const [comments, setComments] = useState<Comment[]>(
-    normalizeComments(task.comments as any)
-  );
+  const [docContent, setDocContent] = useState<string>(task?.documentation ?? "");
+  const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [project, setProject] = useState<Project | null>(null);
 
@@ -52,7 +20,7 @@ export default function TaskDetails({ task }: { task: Task }) {
     toolbar: [
       ["bold", "italic", "underline", "strike"],
       ["blockquote", "code-block"],
-      [{ header: 1 }, { header: 2 }, { header: 3 }],
+      [{ header: [1, 2, 3, false] }],
       [{ list: "ordered" }, { list: "bullet" }],
       [{ align: [] }],
       ["link"],
@@ -60,60 +28,64 @@ export default function TaskDetails({ task }: { task: Task }) {
     ],
   };
 
-  // 🔹 Sync tasks & comments
+  // 🔹 Load project info
   useEffect(() => {
-    // Load project metadata
-    try {
-      const storedProjects = JSON.parse(
-        localStorage.getItem("projects") || "[]"
-      );
-      const proj = storedProjects.find((p: Project) => p.id === task.projectId);
-      if (proj) setProject(proj);
-    } catch {
-      setProject(null);
-    }
+    if (!task?.projectId) return;
+    fetch(`/api/projects/${task.projectId}`, { credentials: "include" })
+      .then((res) => res.json())
+      .then((proj) => setProject(proj))
+      .catch(() => setProject(null));
+  }, [task?.projectId]);
 
-    const handler = (e: Event) => {
-      const custom = e as CustomEvent<{ projectId?: string }>;
-      if (custom.detail?.projectId !== task.projectId) return;
+  // 🔹 Load comments
+  useEffect(() => {
+    if (!task?.id) return;
+    fetch(`/api/tasks/${task.id}/comments`, { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => setComments(data ?? []))
+      .catch(() => setComments([]));
+  }, [task?.id]);
 
-      const updated = loadTasks(task.projectId) || [];
-      const found = updated.find((x) => x.id === task.id);
-      if (found) {
-        setComments(normalizeComments(found.comments as any));
-        setDocContent(found.documentation ?? "");
-      }
-    };
-
-    const storageHandler = () => {
-      const updated = loadTasks(task.projectId) || [];
-      const found = updated.find((x) => x.id === task.id);
-      if (found) {
-        setComments(normalizeComments(found.comments as any));
-        setDocContent(found.documentation ?? "");
-      }
-    };
-
-    window.addEventListener("tasksUpdated", handler);
-    window.addEventListener("storage", storageHandler);
-
-    return () => {
-      window.removeEventListener("tasksUpdated", handler);
-      window.removeEventListener("storage", storageHandler);
-    };
-  }, [task.id, task.projectId]);
-
-  // 🔹 Save documentation per project
-  const saveDocumentation = (content: string) => {
+  // 🔹 Save documentation
+  const saveDocumentation = async (content: string) => {
     setDocContent(content);
-
-    const stored = loadTasks(task.projectId) || [];
-    const updatedTasks = stored.map((t) =>
-      t.id === task.id ? { ...t, documentation: content } : t
-    );
-
-    saveTasks(updatedTasks, task.projectId);
+    if (!task?.id) return;
+    await fetch(`/api/tasks/${task.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ documentation: content }),
+    });
   };
+
+  // 🔹 Add comment
+  const addComment = async () => {
+    if (!task?.id || !newComment.trim()) return;
+
+    const res = await fetch(`/api/tasks/${task.id}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        text: newComment,
+        author: "You", // 🔹 Replace with logged-in user later
+      }),
+    });
+
+    if (res.ok) {
+      const comment = await res.json();
+      setComments([comment, ...comments]);
+      setNewComment("");
+    }
+  };
+
+  if (!task) {
+    return (
+      <div className="p-6 text-center text-red-500">
+        ⚠️ Task not found or invalid
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -126,7 +98,7 @@ export default function TaskDetails({ task }: { task: Task }) {
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="min-w-0">
                   <h2 className="text-lg sm:text-xl font-bold break-words">
-                    {task.title}
+                    {task.title ?? "Untitled Task"}
                   </h2>
                   {project ? (
                     <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -170,7 +142,7 @@ export default function TaskDetails({ task }: { task: Task }) {
                 <div>
                   <h3 className="font-semibold mb-1">Status</h3>
                   <span className="px-3 py-1 text-xs rounded bg-yellow-500 text-white">
-                    {task.status}
+                    {task.status ?? "Unknown"}
                   </span>
                 </div>
                 <div>
@@ -182,7 +154,7 @@ export default function TaskDetails({ task }: { task: Task }) {
                 <div>
                   <h3 className="font-semibold mb-1">Priority</h3>
                   <span className="px-3 py-1 text-xs rounded bg-orange-500 text-white">
-                    {task.priority}
+                    {task.priority ?? "Normal"}
                   </span>
                 </div>
               </div>
@@ -215,18 +187,7 @@ export default function TaskDetails({ task }: { task: Task }) {
                   focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
               <button
-                onClick={() => {
-                  const comment = saveComment(
-                    task.id,
-                    "You",
-                    newComment,
-                    task.projectId
-                  );
-                  if (comment) {
-                    setComments([comment, ...comments]);
-                    setNewComment("");
-                  }
-                }}
+                onClick={addComment}
                 disabled={!newComment.trim()}
                 className={`mt-2 w-full sm:w-auto px-4 py-2 rounded-md text-white text-sm sm:text-base 
                   ${
@@ -237,6 +198,27 @@ export default function TaskDetails({ task }: { task: Task }) {
               >
                 Post Comment
               </button>
+
+              {/* Render comments */}
+              <div className="mt-4 space-y-3">
+                {comments.length === 0 ? (
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">
+                    No comments yet.
+                  </p>
+                ) : (
+                  comments.map((c) => (
+                    <div key={c.id} className="border-b pb-2">
+                      <p className="text-sm text-gray-800 dark:text-gray-200">
+                        <span className="font-semibold">{c.author}:</span>{" "}
+                        {c.text}
+                      </p>
+                      <span className="text-xs text-gray-500">
+                        {new Date(c.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
 
             {/* Attachments */}

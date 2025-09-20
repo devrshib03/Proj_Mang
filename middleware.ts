@@ -25,5 +25,5 @@ export async function middleware(req: NextRequest) {
 // Apply middleware only on dashboard routes
 export const config = {
   matcher: ["/app/dashboard/:path*", "/app"],
-matcher: ["/app/members/:path*","/app"],
+  matcher: ["/app/members/:path*","/app"],
 };

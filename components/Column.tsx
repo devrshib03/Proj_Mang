@@ -1,6 +1,7 @@
-'use client'
-import { Task } from '../types'
-import TaskCard from './TaskCard'
+"use client";
+
+import { Task } from "../types";
+import TaskCard from "./TaskCard";
 
 export default function Column({
   title,
@@ -8,14 +9,14 @@ export default function Column({
   status,
   tasks,
   onDropTask,
-  small = false
+  small = false,
 }: {
   title: string;
   colorClass: string;
-  status: Task['status'];
+  status: Task["status"];
   tasks: Task[];
-  onDropTask: (id: string, status: Task['status']) => void;
-  small?: boolean; // ✅ NEW prop
+  onDropTask: (id: string, status: Task["status"]) => void;
+  small?: boolean;
 }) {
   return (
     <div
@@ -30,12 +31,18 @@ export default function Column({
       <div
         onDragOver={(e) => {
           e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
+          e.currentTarget.classList.add("bg-gray-100", "dark:bg-gray-700");
+        }}
+        onDragLeave={(e) => {
+          e.currentTarget.classList.remove("bg-gray-100", "dark:bg-gray-700");
         }}
         onDrop={(e) => {
           e.preventDefault();
-          const id = e.dataTransfer.getData('text/plain');
-          if (id) onDropTask(id, status);
+          e.currentTarget.classList.remove("bg-gray-100", "dark:bg-gray-700");
+          const id = e.dataTransfer.getData("text/plain");
+          if (id) {
+            onDropTask(id, status);
+          }
         }}
         className="
           rounded-2xl 
@@ -44,11 +51,9 @@ export default function Column({
           dark:bg-card-dark 
           flex flex-col flex-1
           transition-all duration-200
-          hover:shadow-md
         "
         style={{
-          backgroundColor: 'var(--card-color)',
-          borderColor: 'rgba(0,0,0,0.1)',
+          borderColor: "rgba(0,0,0,0.1)",
         }}
       >
         {/* Header */}
@@ -62,21 +67,17 @@ export default function Column({
             ${small ? "text-[11px]" : "text-xs sm:text-sm"}
           `}
           style={{
-            color: 'var(--text-color)',
-            borderColor: 'rgba(0,0,0,0.1)',
+            borderColor: "rgba(0,0,0,0.1)",
           }}
         >
           <span className={`h-2 w-2 rounded-full ${colorClass}`}></span>
           <span className="truncate">{title}</span>
-          <div
-            className="ml-auto text-[10px] sm:text-[11px]"
-            style={{ color: 'var(--text-color)' }}
-          >
+          <div className="ml-auto text-[10px] sm:text-[11px]">
             {tasks.length}
           </div>
         </div>
 
-        {/* Tasks area → flex grows naturally */}
+        {/* Tasks area */}
         <div
           className="
             p-1 sm:p-2 
@@ -86,7 +87,7 @@ export default function Column({
           "
         >
           {tasks.map((t) => (
-            <TaskCard key={t.id} task={t} />
+            <TaskCard key={t._id || t.id} task={t} />
           ))}
 
           {tasks.length === 0 && (
@@ -97,5 +98,5 @@ export default function Column({
         </div>
       </div>
     </div>
-  )
+  );
 }

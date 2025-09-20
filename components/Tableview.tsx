@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Paperclip, MoreVertical } from "lucide-react";
-import { loadTasks } from "../lib/storage";
 import type { Task } from "../types";
 import Link from "next/link";
 
@@ -17,33 +16,33 @@ export default function TableView({ projectId }: TableViewProps) {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [selected, setSelected] = useState<string[]>([]);
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
   const pageSize = 5;
 
-  // 🔹 Sync tasks with localStorage (per project)
+  // 🔹 Fetch tasks from API
+  const fetchTasks = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(
+        projectId ? `/api/projects/${projectId}/tasks` : "/api/tasks",
+        {
+          cache: "no-store",
+          credentials: "include", // 🔹 important for auth
+        }
+      );
+      if (!res.ok) throw new Error("Failed to fetch tasks");
+      const data = await res.json();
+      setTasks(data?.data || []);
+    } catch (err) {
+      console.error("Error loading tasks:", err);
+      setTasks([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const sync = (e?: Event) => {
-      const custom = e as CustomEvent<{ projectId?: string }> | undefined;
-
-      // If event has no detail → reload all
-      if (!custom?.detail) {
-        setTasks(loadTasks(projectId));
-        return;
-      }
-
-      // Only reload if event is for this project
-      if (custom.detail.projectId === projectId) {
-        setTasks(loadTasks(projectId));
-      }
-    };
-
-    sync(); // initial load
-    window.addEventListener("tasksUpdated", sync as EventListener);
-    window.addEventListener("storage", () => sync()); // ✅ cross-tab sync
-
-    return () => {
-      window.removeEventListener("tasksUpdated", sync as EventListener);
-      window.removeEventListener("storage", () => sync());
-    };
+    fetchTasks();
   }, [projectId]);
 
   // 🔹 Filter + Sort
@@ -74,7 +73,7 @@ export default function TableView({ projectId }: TableViewProps) {
     if (selected.length === paginatedTasks.length) {
       setSelected([]);
     } else {
-      setSelected(paginatedTasks.map((t) => t.id));
+      setSelected(paginatedTasks.map((t) => t._id)); // ✅ using _id from DB
     }
   };
   const toggleOne = (id: string) => {
@@ -148,7 +147,13 @@ export default function TableView({ projectId }: TableViewProps) {
             </tr>
           </thead>
           <tbody className="text-gray-700 dark:text-brand-text text-sm">
-            {paginatedTasks.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={9} className="px-4 py-6 text-center">
+                  Loading tasks...
+                </td>
+              </tr>
+            ) : paginatedTasks.length === 0 ? (
               <tr>
                 <td colSpan={9} className="px-4 py-6 text-center text-gray-500">
                   No tasks found.
@@ -157,14 +162,14 @@ export default function TableView({ projectId }: TableViewProps) {
             ) : (
               paginatedTasks.map((task) => (
                 <tr
-                  key={task.id}
+                  key={task._id}
                   className="border-t border-gray-200 dark:border-brand-border hover:bg-gray-50 dark:hover:bg-brand-bg transition"
                 >
                   <td className="px-4 py-2">
                     <input
                       type="checkbox"
-                      checked={selected.includes(task.id)}
-                      onChange={() => toggleOne(task.id)}
+                      checked={selected.includes(task._id)}
+                      onChange={() => toggleOne(task._id)}
                     />
                   </td>
                   <td className="px-4 py-2">
@@ -173,7 +178,7 @@ export default function TableView({ projectId }: TableViewProps) {
                         {task.title[0]}
                       </div>
                       <Link
-                        href={`/app/dashboard/projects/${projectId}/tasks/${task.id}`}
+                        href={`/app/dashboard/projects/${projectId}/tasks/${task._id}`}
                         className="hover:underline"
                       >
                         {task.title}
@@ -220,7 +225,6 @@ export default function TableView({ projectId }: TableViewProps) {
           </tbody>
         </table>
       </div>
-
       {/* Mobile Card View */}
       <div className="md:hidden divide-y divide-gray-200 dark:divide-brand-border">
         {paginatedTasks.length === 0 ? (
