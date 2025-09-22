@@ -22,7 +22,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { Task } from "../types";
-import { addTask, loadTasks } from "../lib/storage"; // ✅ use storage helpers
+import { addTask, loadTasks } from "../lib/storage";
 
 // ✅ Props coming from DashboardHomePage
 interface DashboardViewProps {
@@ -36,13 +36,7 @@ interface TaskFormData {
   priority: "High" | "Medium" | "Low";
   startDate: string;
   dueDate: string;
-  status:
-    | "To Do"
-    | "In Progress"
-    | "Blocked"
-    | "Completed"
-    | "In Review"
-    | "Backlog";
+  status: "Todo" | "In Progress" | "Blocked" | "Completed" | "In Review" | "Backlog";
   description: string;
 }
 
@@ -156,33 +150,48 @@ export default function DashboardView({
   const [activities, setActivities] = useState<Activity[]>([]);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+const [formData, setFormData] = useState<TaskFormData>({
+  title: "",
+  assignee: "",
+  priority: "Medium",
+  startDate: new Date().toISOString().split("T")[0],
+  dueDate: new Date().toISOString().split("T")[0],
+  status: "Todo",   // 👈 FIXED (was "ToDo")
+  description: "",
+});
 
-  const [formData, setFormData] = useState<TaskFormData>({
-    title: "",
-    assignee: "",
-    priority: "Medium",
-    startDate: new Date().toISOString().split("T")[0],
-    dueDate: new Date().toISOString().split("T")[0],
-    status: "To Do",
-    description: "",
-  });
 
-  const storageKey = projectId ? `tasks_${projectId}` : "tasks_global";
+  // ✅ Load tasks from API
+useEffect(() => {
+  (async () => {
+    try {
+      if (!projectId) return;
+      const res = await loadTasks(projectId); // returns Task[]
+      setTasks(res);
+    } catch (err) {
+      console.error("Error loading tasks:", err);
+      toast.error("Failed to load tasks");
+    }
+  })();
+}, [projectId]);
 
-  // ✅ Load tasks per project
+
+
+// ✅ Load activities/timeline from localStorage
+useEffect(() => {
+  if (!projectId) return;
+  const savedActivities = localStorage.getItem(`activities_${projectId}`);
+  const savedTimeline = localStorage.getItem(`timeline_${projectId}`);
+  if (savedActivities) setActivities(JSON.parse(savedActivities));
+  if (savedTimeline) setTimeline(JSON.parse(savedTimeline));
+}, [projectId]);
+
+  // ✅ Persist activities/timeline to localStorage
   useEffect(() => {
-    setTasks(loadTasks(projectId));
-
-    const savedActivities = localStorage.getItem(`activities_${projectId}`);
-    const savedTimeline = localStorage.getItem(`timeline_${projectId}`);
-    if (savedActivities) setActivities(JSON.parse(savedActivities));
-    if (savedTimeline) setTimeline(JSON.parse(savedTimeline));
-  }, [projectId]);
-
-  // ✅ Persist when activities/timeline change
-  useEffect(() => {
-    localStorage.setItem(`activities_${projectId}`, JSON.stringify(activities));
-    localStorage.setItem(`timeline_${projectId}`, JSON.stringify(timeline));
+    if (projectId) {
+      localStorage.setItem(`activities_${projectId}`, JSON.stringify(activities));
+      localStorage.setItem(`timeline_${projectId}`, JSON.stringify(timeline));
+    }
   }, [activities, timeline, projectId]);
 
   const handleChange = (
@@ -194,43 +203,26 @@ export default function DashboardView({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
+  // ✅ FIXED handleSubmit
+// ✅ Full handleSubmit function
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    const statusMap: Record<string, Task["status"]> = {
-      "To Do": "todo",
-      "In Progress": "inprogress",
-      Blocked: "blocked",
-      Completed: "completed",
-      "In Review": "inreview",
-      Backlog: "backlog",
-    };
-    const priorityMap: Record<string, Task["priority"]> = {
-      High: "high",
-      Medium: "medium",
-      Low: "low",
-    };
+  try {
+    // ✅ Call API to create task and store the result
+    const newTask = await addTask(projectId!, {
+      title: formData.title,
+      description: formData.description,
+      status: formData.status,
+      priority: formData.priority,
+      dueDate: formData.dueDate,
+      user: formData.assignee || null,
+    });
 
-  const newTask: Task = {
-  id: crypto.randomUUID(),
-  title: formData.title,
-  assignedTo: formData.assignee ? { name: formData.assignee } : undefined,
-  priority: priorityMap[formData.priority] || "medium",
-  createdAt: new Date().toISOString(),
-  dueDate: formData.dueDate,
-  status: statusMap[formData.status] || "todo",
-  description: formData.description,
-  attachments: 0,
-  comments: [],
-  projectId: projectId || "global", // ✅ link to project
-};
+    // ✅ Add to tasks list
+    setTasks((prev) => [newTask, ...prev]);
 
-
-    // ✅ Save using storage helper (syncs with Kanban too)
-    addTask(newTask, projectId);
-    setTasks(loadTasks(projectId));
-
-    // ✅ Track activities + timeline
+    // ✅ Add to activities
     setActivities((prev) => [
       {
         id: crypto.randomUUID(),
@@ -240,11 +232,12 @@ export default function DashboardView({
       ...prev,
     ]);
 
+    // ✅ Add to timeline
     setTimeline((prev) => [
       {
         id: crypto.randomUUID(),
         title: `Task Created: ${newTask.title}`,
-        description: newTask.description,
+        description: newTask.description || "",
         date: new Date().toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
@@ -255,34 +248,21 @@ export default function DashboardView({
     ]);
 
     toast.success("Task created successfully!");
-
-    setFormData({
-      title: "",
-      assignee: "",
-      priority: "Medium",
-      startDate: new Date().toISOString().split("T")[0],
-      dueDate: new Date().toISOString().split("T")[0],
-      status: "To Do",
-      description: "",
-    });
-
     setIsModalOpen(false);
-  };
+  } catch (err) {
+    console.error("Error creating task:", err);
+    toast.error("Failed to create task");
+  }
+};
 
   // 📊 Stats
-  const totalTasksCount = tasks.length;
-  const completedTasksCount = tasks.filter(
-    (t) => t.status === "completed"
-  ).length;
-  const inProgressTasksCount = tasks.filter(
-    (t) => t.status === "inprogress"
-  ).length;
-  const overdueTasksCount = tasks.filter(
-    (t) =>
-      t.dueDate &&
-      new Date(t.dueDate) < new Date() &&
-      t.status !== "completed"
-  ).length;
+  const completedTasksCount = tasks.filter((t) => t.status === "Completed").length;
+const inProgressTasksCount = tasks.filter((t) => t.status === "In Progress").length;
+
+const overdueTasksCount = tasks.filter(
+  (t) => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== "Completed"
+).length;
+
   const teamMembersCount = new Set(
     tasks.map((t) => t.assignedTo?.name).filter(Boolean)
   ).size;
@@ -291,19 +271,19 @@ export default function DashboardView({
     {
       label: "Tasks Completed",
       value: completedTasksCount,
-      total: totalTasksCount,
+      total: tasks.length,
       icon: <CheckCircle size={24} />,
     },
     {
       label: "In Progress",
       value: inProgressTasksCount,
-      total: totalTasksCount,
+      total: tasks.length,
       icon: <ListTodo size={24} />,
     },
     {
       label: "Overdue",
       value: overdueTasksCount,
-      total: totalTasksCount,
+      total: tasks.length,
       icon: <BarChart2 size={24} />,
     },
     {
@@ -317,6 +297,8 @@ export default function DashboardView({
 
   const { data: taskDistributionData, total: totalTasks } =
     formatDataForPieChart(tasks);
+
+
 
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8 space-y-6 bg-white text-gray-900 dark:bg-brand-bg dark:text-brand-text transition-colors">
@@ -630,22 +612,23 @@ export default function DashboardView({
                 Status
               </label>
               <select
-                id="status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="mt-1 w-full px-3 py-2 sm:px-4 sm:py-2 bg-gray-100 dark:bg-brand-bg 
+              id="status"
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            className="mt-1 w-full px-3 py-2 sm:px-4 sm:py-2 bg-gray-100 dark:bg-brand-bg 
                            border border-gray-300 dark:border-brand-border 
                            rounded-lg focus:ring-emerald-500 focus:border-emerald-500 
                            text-gray-900 dark:text-brand-text text-sm sm:text-base"
-              >
-                <option value="To Do">To Do</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Blocked">Blocked</option>
-                <option value="Completed">Completed</option>
-                <option value="In Review">In Review</option>
-                <option value="Backlog">Backlog</option>
-              </select>
+>
+  <option value="Todo">To Do</option>
+  <option value="In Progress">In Progress</option>
+  <option value="Blocked">Blocked</option>
+  <option value="Completed">Completed</option>
+  <option value="In Review">In Review</option>
+  <option value="Backlog">Backlog</option>
+</select>
+
             </div>
 
             {/* Start Date */}
@@ -738,10 +721,7 @@ export default function DashboardView({
   )}
 </AnimatePresence>
 
-
-
-
-
+   
 
     </div>
   );

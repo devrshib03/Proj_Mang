@@ -22,30 +22,83 @@ const TeamSchema = new Schema({
 }, { timestamps: true });
 
 // Project Schema: Defines the structure for individual projects.
-const ProjectSchema = new Schema({
-  name: { type: String, required: true },
-  description: { type: String },
-  owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  team: { type: Schema.Types.ObjectId, ref: 'Team', required: true },
-  status: { type: String, default: 'To Do' },
-  dueDate: { type: Date },
-}, { timestamps: true });
+
+
+const ProjectSchema = new Schema(
+  {
+    projectId: { type: String, unique: true }, // ✅ Custom ID
+    name: { type: String, required: true },
+    description: { type: String },
+    owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    // team: { type: Schema.Types.ObjectId, ref: "Team" }, // optional
+    status: { type: String, default: "To Do" },
+    dueDate: { type: Date },
+    route: { type: String, required: true },
+  },
+  { timestamps: true }
+);
+
+// ✅ Automatically generate projectId if missing
+ProjectSchema.pre("save", function (next) {
+  if (!this.projectId) {
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    this.projectId = `PRJ-${random}`;
+  }
+  next();
+});
 
 // Task Schema: Defines individual tasks assigned to users within projects.
-const TaskSchema = new Schema({
-  title: { type: String, required: true },
-  description: { type: String },
-  status: { type: String, enum: ['To Do', 'In Progress', 'Blocked', 'Done'], default: 'To Do' },
-  priority: { type: String, enum: ['Low', 'Medium', 'High', 'Urgent'], default: 'Low' },
-  dueDate: { type: Date },
-  attachmentsCount: { type: Number, default: 0 },
-  // Ownership
-  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  project: { type: Schema.Types.ObjectId, ref: 'Project' },
-}, { timestamps: true });
+// models/models.js
+
+
+
+
+const TaskSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    description: { type: String, default: "" },
+    status: {
+  type: String,
+  enum: [
+    "Backlog",
+    "Todo",
+    "In Progress",
+    "In Review",
+    "Blocked",
+    "Completed",
+  ],
+  default: "Backlog", // 👈 default can be "Backlog"
+},
+
+    priority: { type: String, default: "Medium" },
+    dueDate: { type: Date, default: null },
+    project: { type: mongoose.Schema.Types.ObjectId, ref: "Project" },
+    // 👇 change this
+    user: { type: String, default: "Unassigned" }, 
+  },
+  { timestamps: true }
+);
+
+
+
+
+
+
+
+
+// export const Task =
+//   mongoose.models.Task || mongoose.model("Task", taskSchema);
+
+
+// export const Task = mongoose.models.Task || mongoose.model("Task", TaskSchema);
+
+
 
 // Exporting the models, or reusing them if they already exist
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);
 export const Team = mongoose.models.Team || mongoose.model('Team', TeamSchema);
 export const Project = mongoose.models.Project || mongoose.model('Project', ProjectSchema);
-export const Task = mongoose.models.Task || mongoose.model('Task', TaskSchema);
+export const Task =
+  mongoose.models.Task || mongoose.model("Task", TaskSchema);
+
+ 

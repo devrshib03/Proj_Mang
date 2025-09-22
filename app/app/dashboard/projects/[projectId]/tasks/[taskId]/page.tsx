@@ -2,22 +2,35 @@
 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { loadTasks } from "../../../../../../../lib/storage";
-import TaskDetails from "../../../../../../../components/TaskDetails"; // ✅ fixed import case
+import TaskDetails from "../../../../../../../components/Taskdetails"; 
 import type { Task } from "../../../../../../../types";
 
 export default function TaskDetailPage() {
-  const { projectId, taskId } = useParams(); // get both IDs
+  const params = useParams();
+  const projectId = params.projectId as string; // ✅ string
+  const taskId = params.taskId as string;       // ✅ string
+
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!projectId || !taskId) return;
 
-    const tasks = loadTasks(projectId as string) || []; // ✅ safe fallback
-    const found = tasks.find((t) => t.id === taskId);
-    setTask(found || null);
-    setLoading(false);
+    const fetchTask = async () => {
+      try {
+        const res = await fetch(`/api/projects/${projectId}/tasks/${taskId}`);
+        if (!res.ok) throw new Error("Failed to fetch task");
+        const data: Task = await res.json();
+        setTask(data);
+      } catch (err) {
+        console.error("❌ Error loading task:", err);
+        setTask(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTask();
   }, [projectId, taskId]);
 
   if (loading) {

@@ -40,11 +40,17 @@ export async function POST(req) {
     });
 
     // 2. Prepare the response
-    const response = NextResponse.json({ 
-        success: true, 
-        message: 'Logged in successfully.',
-        user: { id: user._id, name: user.name, email: user.email } 
-    });
+   const response = NextResponse.json({ 
+  success: true, 
+  message: 'Logged in successfully.',
+  user: { 
+    id: user._id, 
+    name: user.name, 
+    email: user.email, 
+    token // ✅ include token so frontend can save it
+  } 
+});
+
     // 3. Set the cookie using Next.js built-in cookies API (more reliable)
     response.cookies.set({
       name: 'token',

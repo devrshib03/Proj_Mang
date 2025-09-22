@@ -1,22 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { v4 as uuidv4 } from "uuid";
-
-interface Task {
-  id: string;
-  title: string;
-  status: string;
-  priority: string;
-  comments: { id: string; text: string; author: string; createdAt: string }[];
-}
 
 interface Project {
   id: string;
   name: string;
   description: string;
   route: string;
-  tasks: Task[]; // each project has its own tasks
+  tasks: any[];
 }
 
 interface ProjectFormProps {
@@ -28,33 +19,41 @@ export default function ProjectForm({ onProjectCreated }: ProjectFormProps) {
     name: "",
     description: "",
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
-    const newProject: Project = {
-      id: uuidv4(),
-      name: formData.name,
-      description: formData.description,
-      route: `/projects/${formData.name.toLowerCase().replace(/\s+/g, "-")}`,
-      tasks: [], // 👈 start with empty tasks
-    };
+    try {
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-    const savedProjects = localStorage.getItem("projects");
-    const projects = savedProjects ? JSON.parse(savedProjects) : [];
-    const updated = [...projects, newProject];
-    localStorage.setItem("projects", JSON.stringify(updated));
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to create project");
 
-    if (onProjectCreated) {
-      onProjectCreated(newProject);
+      if (onProjectCreated) {
+        onProjectCreated(data.data);
+      }
+
+      // reset form
+      setFormData({ name: "", description: "" });
+    } catch (error) {
+      console.error("❌ Error creating project:", error);
+      alert("Failed to create project");
+    } finally {
+      setLoading(false);
     }
-
-    setFormData({ name: "", description: "" });
   };
 
   return (
@@ -79,9 +78,10 @@ export default function ProjectForm({ onProjectCreated }: ProjectFormProps) {
 
       <button
         type="submit"
-        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        disabled={loading}
+        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
       >
-        Create Project
+        {loading ? "Creating..." : "Create Project"}
       </button>
     </form>
   );

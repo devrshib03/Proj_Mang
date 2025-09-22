@@ -1,68 +1,74 @@
-// lib/storage.ts
+// lib/api.ts
 import { Task, Comment } from "../types";
+import { apiFetch } from "./localAuth";
 
-// 🔹 Save tasks for a project
-export function saveTasks(tasks: Task[], projectId?: string) {
-  const key = projectId ? `tasks-${projectId}` : "tasks";
-  localStorage.setItem(key, JSON.stringify(tasks));
+const API_BASE = "/api/projects";
 
-  // notify others
-  window.dispatchEvent(
-    new CustomEvent("tasksUpdated", { detail: { projectId } })
-  );
+/* -------------------------------
+   Load tasks for a specific project
+-------------------------------- */
+export async function loadTasks(projectId: string): Promise<Task[]> {
+  const res = await fetch(`${API_BASE}/${projectId}/tasks`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) throw new Error("Failed to load tasks");
+
+  const data = await res.json().catch(() => ({}));
+  return data.data || []; // normalize return
 }
 
-// 🔹 Load tasks for a project
-export function loadTasks(projectId?: string): Task[] {
-  const key = projectId ? `tasks-${projectId}` : "tasks";
-  try {
-    return JSON.parse(localStorage.getItem(key) || "[]");
-  } catch {
-    return [];
-  }
+/* -------------------------------
+   Add a new task to a project
+-------------------------------- */
+export async function addTask(projectId: string, taskData: Partial<Task>): Promise<Task> {
+  const res = await fetch(`${API_BASE}/${projectId}/tasks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(taskData),
+  });
+
+  if (!res.ok) throw new Error("Failed to add task");
+
+  const data = await res.json().catch(() => ({}));
+  return data.data || data.task || data;
 }
 
-// 🔹 Add task
-export function addTask(task: Task, projectId?: string): Task {
-  const tasks = loadTasks(projectId);
-  const updated = [task, ...tasks];
-  saveTasks(updated, projectId);
-  return task;
-}
-
-// 🔹 Update task status
-export function updateTaskStatus(
-  id: string,
-  status: Task["status"],
-  projectId?: string
-) {
-  const tasks = loadTasks(projectId);
-  const updated = tasks.map((t) => (t.id === id ? { ...t, status } : t));
-  saveTasks(updated, projectId);
-}
-
-// 🔹 Add comment
-export function addComment(
+/* -------------------------------
+   Update a task's status
+-------------------------------- */
+export async function updateTaskStatus(
+  projectId: string,
   taskId: string,
-  author: string,
-  text: string,
-  projectId?: string
-): Comment | null {
-  if (!text.trim()) return null;
+  status: Task["status"]
+): Promise<Task> {
+  const res = await apiFetch(`${API_BASE}/${projectId}/tasks/${taskId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
 
-  const tasks = loadTasks(projectId);
-  const task = tasks.find((t) => t.id === taskId);
-  if (!task) return null;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Failed to update task status");
 
-  const comment: Comment = {
-    id: Date.now().toString(),
-    text,
-    author,
-    createdAt: new Date().toISOString(),
-    taskId,
-  };
+  return data.data || data.task || data;
+}
 
-  task.comments = [comment, ...(task.comments || [])];
-  saveTasks(tasks, projectId);
-  return comment;
+/* -------------------------------
+   Add a comment to a task
+-------------------------------- */
+export async function addComment(
+  projectId: string,
+  taskId: string,
+  comment: Partial<Comment>
+): Promise<Comment> {
+  const res = await apiFetch(`${API_BASE}/${projectId}/tasks/${taskId}/comments`, {
+    method: "POST",
+    body: JSON.stringify(comment),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Failed to add comment");
+
+  return data.data || data.comment || data;
 }

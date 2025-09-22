@@ -4,7 +4,8 @@ import { Plus, Folder, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Project {
-  id: string;
+  _id?: string; // MongoDB _id
+  id: string;   // React key
   name: string;
   description: string;
   route: string;
@@ -18,6 +19,7 @@ export default function Sidebar() {
   const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -26,17 +28,31 @@ export default function Sidebar() {
     }
   }, [showDialog]);
 
+  // 🔹 Load projects from MongoDB
   useEffect(() => {
-    const savedProjects = localStorage.getItem("projects");
-    if (savedProjects) {
-      setProjects(JSON.parse(savedProjects));
-    }
-  }, []);
+    async function fetchProjects() {
+      try {
+        const res = await fetch("/api/projects", { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to load projects");
 
-  const saveProjectsToStorage = (newProjects: Project[]) => {
-    localStorage.setItem("projects", JSON.stringify(newProjects));
-    setProjects(newProjects);
-  };
+        const json = await res.json();
+        if (json?.data) {
+          const normalized = json.data.map((p: any) => ({
+            id: p._id?.toString() ?? Date.now().toString(),
+            name: p.name,
+            description: p.description || "",
+            route: p.route || generateRoute(p.name), // ✅ fallback if missing
+          }));
+          setProjects(normalized);
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch projects:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProjects();
+  }, []);
 
   const generateRoute = (name: string): string => {
     return `/app/dashboard/projects/${name
@@ -49,23 +65,20 @@ export default function Sidebar() {
   };
 
   const validateProjectName = (name: string): string | null => {
-    if (!name.trim()) {
-      return "Project name cannot be empty";
-    }
-    if (name.trim().length < 2) {
+    if (!name.trim()) return "Project name cannot be empty";
+    if (name.trim().length < 2)
       return "Project name must be at least 2 characters";
-    }
     if (
       projects.some(
         (p) => p?.name && p.name.toLowerCase() === name.trim().toLowerCase()
       )
-    ) {
+    )
       return "Project name already exists";
-    }
     return null;
   };
 
-  const handleCreateProject = () => {
+  // 🔹 Create project in MongoDB
+  const handleCreateProject = async () => {
     const trimmedName = projectName.trim();
     const validationError = validateProjectName(trimmedName);
 
@@ -81,16 +94,44 @@ export default function Sidebar() {
       route: generateRoute(trimmedName),
     };
 
-    const updatedProjects = [...projects, newProject];
-    saveProjectsToStorage(updatedProjects);
+    try {
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newProject),
+      });
 
-    // Reset dialog
-    setProjectName("");
-    setDescription("");
-    setError("");
-    setShowDialog(false);
+      const json = await res.json();
 
-    console.log("Project created:", newProject);
+      if (!res.ok) {
+        console.error("❌ Server error:", json);
+        setError(json.message || "Failed to save project");
+        return;
+      }
+
+      const savedProject = json?.data;
+
+      if (savedProject) {
+        setProjects((prev) => [
+          ...prev,
+          {
+            id: savedProject._id?.toString() ?? Date.now().toString(),
+            name: savedProject.name,
+            description: savedProject.description,
+            route: savedProject.route || generateRoute(savedProject.name),
+          },
+        ]);
+      }
+
+      // Reset dialog
+      setProjectName("");
+      setDescription("");
+      setError("");
+      setShowDialog(false);
+    } catch (err) {
+      console.error("❌ Network error:", err);
+      setError("Failed to reach server. Try again.");
+    }
   };
 
   const handleDialogClose = () => {
@@ -152,7 +193,7 @@ export default function Sidebar() {
                 { name: "Home", route: "/app/dashboard" },
                 { name: "My Tasks", route: "/app/my-task" },
                 { name: "Members", route: "/app/members" },
-                { name: "Settings", route: "/app/userprofile" }
+                { name: "Settings", route: "/app/userprofile" },
               ].map((item) => (
                 <li
                   key={item.name}
@@ -186,8 +227,12 @@ export default function Sidebar() {
               </button>
             </div>
 
-            {projects.length === 0 ? (
-              <div className={`text-sm opacity-60 ${!open ? "hidden" : "px-3 py-2"}`}>
+            {loading ? (
+              <div className="text-sm opacity-60 px-3 py-2">Loading...</div>
+            ) : projects.length === 0 ? (
+              <div
+                className={`text-sm opacity-60 ${!open ? "hidden" : "px-3 py-2"}`}
+              >
                 No projects
               </div>
             ) : (
