@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '/lib/mongodb';
-import { User } from 'models/models';
+import dbConnect from '../../../../lib/mongodb.js';
+import { User } from '../../../../models/models.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { serialize } from 'cookie';

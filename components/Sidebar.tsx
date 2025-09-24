@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { Plus, Folder, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Plus, Folder, X, BarChart3, CheckSquare, Users, Settings, Home } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 
 interface Project {
   id: string;
@@ -15,6 +16,7 @@ interface Project {
 
 export default function Sidebar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
   const [showDialog, setShowDialog] = useState(false);
@@ -121,10 +123,6 @@ export default function Sidebar() {
     }
   };
 
-  const handleProjectClick = (project: Project) => {
-    router.push(project.route);
-  };
-
   return (
     <>
       <aside
@@ -162,23 +160,44 @@ export default function Sidebar() {
             )}
             <ul className="space-y-1">
               {[
-                { name: "Home", route: "/app/dashboard" },
-                { name: "My Tasks", route: "/app/my-task" },
-                { name: "Members", route: "/app/members" },
-                { name: "Settings", route: "/app/userprofile" }
-              ].map((item) => (
-                <li
-                  key={item.name}
-                  onClick={() => router.push(item.route)}
-                  className={`px-3 py-2 rounded-lg cursor-pointer transition-colors 
-                             hover:bg-gray-100 dark:hover:bg-gray-800
-                             text-sm font-medium ${
-                               !open ? "flex justify-center" : ""
-                             }`}
-                >
-                  {open ? item.name : item.name[0]}
-                </li>
-              ))}
+                { name: "Home", route: "/app/homeSide", icon: Home },
+                { name: "Dashboard", route: "/app/dashboard", icon: BarChart3 },
+                { name: "My Tasks", route: "/app/my-task", icon: CheckSquare },
+                { name: "Members", route: "/app/members", icon: Users },
+                { name: "Settings", route: "/app/userprofile", icon: Settings }
+              ].map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.route;
+                
+                return (
+                  <li key={item.name}>
+                    <Link
+                      href={item.route}
+                      className={`px-3 py-2 rounded-lg cursor-pointer transition-all duration-200
+                                 hover:bg-gray-100 dark:hover:bg-gray-800
+                                 text-sm font-medium flex items-center gap-3 ${
+                                   !open ? "justify-center" : ""
+                                 } ${
+                                   isActive 
+                                     ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-semibold shadow-sm" 
+                                     : "text-gray-700 dark:text-gray-300"
+                                 }`}
+                    >
+                      <Icon 
+                        size={18} 
+                        className={`flex-shrink-0 ${
+                          isActive 
+                            ? "text-purple-600 dark:text-purple-400" 
+                            : "text-gray-500 dark:text-gray-400"
+                        }`} 
+                      />
+                      {open && (
+                        <span className="truncate">{item.name}</span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </div>
 
@@ -213,28 +232,41 @@ export default function Sidebar() {
               </div>
             ) : (
               <ul className="space-y-1">
-                {projects.map((project) => (
-                  <li
-                    key={project.id}
-                    onClick={() => handleProjectClick(project)}
-                    className={`px-3 py-2 rounded-lg cursor-pointer transition-colors 
-                               hover:bg-gray-100 dark:hover:bg-gray-800
-                               text-sm font-medium flex items-center gap-2 ${
-                                 !open ? "justify-center" : ""
-                               }`}
-                    title={
-                      !open
-                        ? `${project.name} (${project.route})`
-                        : project.route
-                    }
-                  >
-                    <Folder
-                      size={16}
-                      className="text-purple-600 dark:text-purple-400 flex-shrink-0"
-                    />
-                    {open && <span className="truncate">{project.name}</span>}
-                  </li>
-                ))}
+                {projects.map((project) => {
+                  const isActive = pathname === project.route;
+                  
+                  return (
+                    <li key={project.id}>
+                      <Link
+                        href={project.route}
+                        className={`px-3 py-2 rounded-lg cursor-pointer transition-all duration-200
+                                   hover:bg-gray-100 dark:hover:bg-gray-800
+                                   text-sm font-medium flex items-center gap-2 ${
+                                     !open ? "justify-center" : ""
+                                   } ${
+                                     isActive 
+                                       ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-semibold shadow-sm" 
+                                       : "text-gray-700 dark:text-gray-300"
+                                   }`}
+                        title={
+                          !open
+                            ? `${project.name} (${project.route})`
+                            : project.route
+                        }
+                      >
+                        <Folder
+                          size={16}
+                          className={`flex-shrink-0 ${
+                            isActive 
+                              ? "text-purple-600 dark:text-purple-400" 
+                              : "text-purple-500 dark:text-purple-400"
+                          }`}
+                        />
+                        {open && <span className="truncate">{project.name}</span>}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>

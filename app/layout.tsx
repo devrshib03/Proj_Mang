@@ -1,8 +1,9 @@
 "use client";
 
-import "@/globals.css"; // Using path alias for robustness
+import "./globals.css";
 import { useState, useEffect, type ReactNode } from "react";
 import { Sun, Moon } from "lucide-react";
+import { Toaster } from "react-hot-toast";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   // State for managing the theme. It's good to keep this in the root
@@ -48,6 +49,19 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </button>
         {/* The children will be either your public pages or the layout with the sidebar */}
         {children}
+        
+        {/* Toast notifications */}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: theme === 'dark' ? '#374151' : '#ffffff',
+              color: theme === 'dark' ? '#f9fafb' : '#111827',
+              border: theme === 'dark' ? '1px solid #4b5563' : '1px solid #e5e7eb',
+            },
+          }}
+        />
       </body>
     </html>
   );

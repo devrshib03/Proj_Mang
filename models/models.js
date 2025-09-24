@@ -31,7 +31,30 @@ const ProjectSchema = new Schema({
   dueDate: { type: Date },
 }, { timestamps: true });
 
+// Task Schema: Defines the structure for individual tasks within projects.
+const TaskSchema = new Schema({
+  title: { type: String, required: true },
+  description: { type: String },
+  status: { 
+    type: String, 
+    enum: ['TODO', 'IN_PROGRESS', 'BACKLOG', 'COMPLETED', 'BLOCKED', 'IN_REVIEW'], 
+    default: 'TODO' 
+  },
+  priority: {
+    type: String,
+    enum: ['low', 'medium', 'high', 'urgent'],
+    default: 'medium'
+  },
+  assignee: { type: Schema.Types.ObjectId, ref: 'User' },
+  project: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
+  team: { type: Schema.Types.ObjectId, ref: 'Team', required: true },
+  dueDate: { type: Date },
+  estimatedHours: { type: Number },
+  actualHours: { type: Number },
+}, { timestamps: true });
+
 // Exporting the models, or reusing them if they already exist
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);
 export const Team = mongoose.models.Team || mongoose.model('Team', TeamSchema);
 export const Project = mongoose.models.Project || mongoose.model('Project', ProjectSchema);
+export const Task = mongoose.models.Task || mongoose.model('Task', TaskSchema);
