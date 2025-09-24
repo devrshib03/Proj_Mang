@@ -31,17 +31,27 @@ const ProjectSchema = new Schema({
   dueDate: { type: Date },
 }, { timestamps: true });
 
-// Task Schema: Defines individual tasks assigned to users within projects.
+// Task Schema: Defines the structure for individual tasks within projects.
 const TaskSchema = new Schema({
   title: { type: String, required: true },
   description: { type: String },
-  status: { type: String, enum: ['To Do', 'In Progress', 'Blocked', 'Done'], default: 'To Do' },
-  priority: { type: String, enum: ['Low', 'Medium', 'High', 'Urgent'], default: 'Low' },
+  status: { 
+    type: String, 
+    enum: ['TODO', 'IN_PROGRESS', 'BACKLOG', 'COMPLETED', 'BLOCKED', 'IN_REVIEW'], 
+    default: 'TODO' 
+  },
+  priority: {
+    type: String,
+    enum: ['low', 'medium', 'high', 'urgent'],
+    default: 'medium'
+  },
+  assignee: { type: Schema.Types.ObjectId, ref: 'User' },
+  project: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
+  team: { type: Schema.Types.ObjectId, ref: 'Team', required: true },
   dueDate: { type: Date },
-  attachmentsCount: { type: Number, default: 0 },
-  // Ownership
-  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  project: { type: Schema.Types.ObjectId, ref: 'Project' },
+  estimatedHours: { type: Number },
+  actualHours: { type: Number },
+  attachmentsCount: { type: Number, default: 0 }
 }, { timestamps: true });
 
 // Exporting the models, or reusing them if they already exist

@@ -1,4 +1,4 @@
-import ProjectForm from 'components/ProjectForm'
+import ProjectForm from 'components/Projectform'
 
 const page = () => {
   return (

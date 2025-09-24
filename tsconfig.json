@@ -41,7 +41,8 @@
     "paths": {
      "@/*": ["./app/*"],
       "@lib/*": ["./lib/*"],
-      "@models/*": ["./models/*"]
+      "@models/*": ["./models/*"],
+      "components/*": ["./components/*"]
     }
   },
   "include": [
