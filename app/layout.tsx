@@ -9,13 +9,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   // layout as it applies to the whole application (<html> tag).
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
-  // Effect to apply the theme class to the document and save to localStorage.
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+
+  // Hide sidebar only on login & signup
+  const hideSidebar = pathname === "/login" || pathname === "/signup" || pathname === "/admin" || pathname === "/";
 
   useEffect(() => {
     if (theme === "dark") {

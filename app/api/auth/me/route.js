@@ -11,16 +11,15 @@ export async function GET() {
   
   try {
     const cookieStore = cookies();
-    const token = cookieStore.get('authToken')?.value;
-
+    const token = cookieStore.get('token')?.value;
     if (!token) {
-      return NextResponse.json({ message: 'Not authenticated.' }, { status: 401 });
+      return NextResponse.json({ message: 'No auth token cookie found.' }, { status: 401 });
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
     
     // Fetch the latest user data from the database
-    const user = await User.findById(decoded.userId).select('-password');
+    const user = await User.findById(decoded.id).select('-password');
 
     if (!user) {
         return NextResponse.json({ message: 'User not found.' }, { status: 404 });
@@ -29,7 +28,6 @@ export async function GET() {
     return NextResponse.json({ success: true, user });
 
   } catch (error) {
-    // This will catch invalid or expired tokens
-    return NextResponse.json({ message: 'Not authenticated.' }, { status: 401 });
+    return NextResponse.json({ message: 'Invalid or expired token.' }, { status: 401 });
   }
 }

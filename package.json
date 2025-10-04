@@ -28,6 +28,8 @@
 
     "framer-motion": "^12.23.12",
 
+    "js-cookie": "^3.0.5",
+
     "jsonwebtoken": "^9.0.2",
 
     "lucide-react": "^0.543.0",
@@ -45,6 +47,8 @@
     "react-dom": "18.3.1",
 
     "react-hot-toast": "^2.6.0",
+
+    "react-quill": "^2.0.0",
 
     "recharts": "^3.2.0",
 

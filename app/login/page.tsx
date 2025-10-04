@@ -19,12 +19,13 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('api/auth/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
+        credentials: 'include',
       });
 
       const data = await response.json();
@@ -35,7 +36,7 @@ export default function LoginPage() {
         localStorage.setItem('user', JSON.stringify(data.user)); 
         console.log('Login successful:', data);
         // Redirect to dashboard
-        router.push('app/dashboard'); 
+        router.push('/app/dashboard'); 
 
       } else {
         // Authentication failed
